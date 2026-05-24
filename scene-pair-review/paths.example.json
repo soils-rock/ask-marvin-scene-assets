@@ -1,5 +1,7 @@
 {
+  "askMarvinRoot": "/absolute/path/to/ask-marvin",
   "dataDir": "data",
   "publicRoot": "/absolute/path/to/ask-marvin/public",
-  "marvinSprite": "/absolute/path/to/ask-marvin/public/images/marvin/full.png"
+  "pairsCsv": "/absolute/path/to/ask-marvin/data/scene_playable_pairs.csv",
+  "syncRegistryToAskMarvin": true
 }
