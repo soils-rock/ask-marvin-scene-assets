@@ -1,0 +1,5 @@
+{
+  "dataDir": "data",
+  "publicRoot": "/absolute/path/to/ask-marvin/public",
+  "marvinSprite": "/absolute/path/to/ask-marvin/public/images/marvin/full.png"
+}

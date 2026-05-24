@@ -1,0 +1,527 @@
+body.scene-pair-review {
+  margin: 0;
+  background: #1a1a1a;
+  color: #eee;
+  font-family: system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.scene-pair-review__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 0.75rem 1rem;
+  background: #252525;
+  border-bottom: 1px solid #444;
+}
+
+.scene-pair-review__header h1 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.scene-pair-review__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scene-pair-review__controls button,
+.scene-pair-review__controls label {
+  font-size: 0.875rem;
+}
+
+.scene-pair-review__controls button {
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+}
+
+.scene-pair-review__meta {
+  font-size: 0.8rem;
+  color: #aaa;
+  flex: 1 1 100%;
+}
+
+.scene-pair-review__meta code {
+  font-size: 0.75rem;
+  color: #cce;
+}
+
+.scene-pair-review__meta-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #da8;
+}
+
+.scene-pair-review__missing {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  color: #faa;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.scene-pair-review__side-summary {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #ccc;
+}
+
+.scene-pair-review__side-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.scene-pair-review__copy-helper {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+}
+
+.scene-pair-review__copy-helper button {
+  margin-right: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.scene-pair-review__copy-helper code {
+  display: block;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  background: #1a1a1a;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #bdb;
+  word-break: break-all;
+}
+
+.scene-pair-review__copy-helper button.is-primary {
+  background: #2a4a2a;
+  border-color: #4a6;
+  color: #cfc;
+}
+
+.scene-pair-review__copy-helper button.is-complete {
+  background: #2a3a5a;
+  border-color: #58a;
+  color: #cef;
+}
+
+.scene-pair-review__notes-label {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+.scene-pair-review__notes-label textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: #eee;
+  resize: vertical;
+}
+
+.scene-pair-review__status {
+  font-weight: 600;
+}
+
+.scene-pair-review__status--staged {
+  color: #da8;
+}
+
+.scene-pair-review__status--committed {
+  color: #8d8;
+}
+
+.scene-pair-review__status--draft {
+  color: #aaa;
+}
+
+.scene-pair-review__copy-helper button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.scene-pair-review__toast {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(90vw, 36rem);
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  z-index: 100;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+.scene-pair-review__toast.is-ok {
+  background: #1e3a1e;
+  border: 1px solid #4a6;
+  color: #cfc;
+}
+
+.scene-pair-review__toast.is-err {
+  background: #3a1e1e;
+  border: 1px solid #844;
+  color: #faa;
+}
+
+.scene-pair-review__main {
+  padding: 1rem;
+}
+
+.scene-pair-review__single {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 120px);
+}
+
+.scene-pair-review__viewport {
+  transform-origin: top center;
+  box-shadow: 0 0 0 2px #444;
+}
+
+/* Review stacking: background → Marvin → foreground (Marvin behind cutout for scale check) */
+.scene-pair-review__scene {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+}
+
+.scene-pair-review__scene .background,
+.scene-pair-review__scene .foreground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.scene-pair-review__scene .background {
+  z-index: 1;
+}
+
+.scene-pair-review__scene .foreground {
+  z-index: 5;
+}
+
+.scene-pair-review__scene .foreground.left {
+  left: 0;
+}
+
+.scene-pair-review__scene .foreground.right {
+  right: 0;
+  left: auto;
+}
+
+/* Review-only preview for staged foreground scale % (baked via Apply to image) */
+.scene-pair-review__scene .foreground.foreground--preview-adjust.left {
+  transform-origin: bottom left;
+}
+
+.scene-pair-review__scene .foreground.foreground--preview-adjust.right {
+  transform-origin: bottom right;
+}
+
+.scene-pair-review__fg-adjust {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #1f1f1f;
+}
+
+.scene-pair-review__fg-adjust legend {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ccc;
+  padding: 0 0.25rem;
+}
+
+.scene-pair-review__fg-adjust-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  color: #999;
+  line-height: 1.35;
+}
+
+.scene-pair-review__fg-adjust-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.scene-pair-review__fg-adjust-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  color: #aaa;
+}
+
+.scene-pair-review__fg-adjust-fields input {
+  padding: 0.3rem 0.4rem;
+  font-size: 0.75rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: #eee;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.scene-pair-review__fg-adjust-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.scene-pair-review__fg-adjust-actions button {
+  margin-right: 0;
+}
+
+/* Marvin placement — mirrors App.css .marvin-box / .marvin-assembly-shell */
+.scene-pair-review__scene .marvin-box {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  pointer-events: none;
+  z-index: 3;
+  overflow: visible;
+  --marvin-scale: 0.7;
+  --marvin-base-width: calc(320px * 300 / 222);
+}
+
+.scene-pair-review__scene .marvin-assembly-shell {
+  position: absolute;
+  bottom: 0;
+  width: calc(var(--marvin-base-width) * var(--marvin-scale));
+  aspect-ratio: 300 / 700;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.scene-pair-review__scene .marvin-box.left .marvin-assembly-shell {
+  left: calc(640px - (var(--marvin-base-width) * var(--marvin-scale) / 2));
+}
+
+.scene-pair-review__scene .marvin-box.right .marvin-assembly-shell {
+  left: calc(1280px - (var(--marvin-base-width) * var(--marvin-scale) / 2));
+}
+
+.scene-pair-review__scene .marvin-assembly-shell > .marvin-sprite {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+  pointer-events: none;
+}
+
+.scene-pair-review__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.scene-pair-review__card {
+  background: #2a2a2a;
+  border: 2px solid #444;
+  border-radius: 6px;
+  padding: 0.5rem;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.scene-pair-review__card:hover {
+  border-color: #6af;
+}
+
+.scene-pair-review__card.is-staged {
+  border-color: #da8;
+}
+
+.scene-pair-review__card.is-draft {
+  border-style: dashed;
+}
+
+.scene-pair-review__card.is-missing {
+  border-color: #a85;
+}
+
+.scene-pair-review__card.is-selected {
+  border-color: #4af;
+  box-shadow: 0 0 0 2px #4af;
+}
+
+.scene-pair-review__card-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #000;
+}
+
+.scene-pair-review__card-thumb .scene-pair-review__scene {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: top left;
+}
+
+.scene-pair-review__card-label {
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  word-break: break-all;
+}
+
+.scene-pair-review__badge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  background: #633;
+  color: #fcc;
+}
+
+.scene-pair-review__badge.ok {
+  background: #363;
+  color: #cfc;
+}
+
+.scene-pair-review__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: #888;
+}
+
+/* Flag scale modal */
+.scene-pair-review__modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.scene-pair-review__modal[hidden] {
+  display: none;
+}
+
+.scene-pair-review__modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.scene-pair-review__modal-panel {
+  position: relative;
+  width: min(100%, 26rem);
+  padding: 1.25rem;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.scene-pair-review__modal-panel h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.scene-pair-review__modal-hint {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: #aaa;
+}
+
+.scene-pair-review__modal-hint code {
+  font-size: 0.7rem;
+  color: #cce;
+}
+
+.scene-pair-review__modal-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.scene-pair-review__modal-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.scene-pair-review__modal-fields input {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.875rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: #eee;
+}
+
+.scene-pair-review__modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+  justify-content: flex-end;
+}
+
+.scene-pair-review__modal-actions button {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.scene-pair-review__modal-actions button[type="submit"] {
+  background: #3a6ea5;
+  color: #fff;
+  border: 1px solid #4a7eb5;
+  border-radius: 4px;
+}
+
+.scene-pair-review__modal-actions button[type="button"] {
+  background: transparent;
+  color: #ccc;
+  border: 1px solid #555;
+  border-radius: 4px;
+}

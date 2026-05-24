@@ -1,0 +1,26 @@
+foreground_id,file,background_id,scene_set_id,marvin_side,foreground_subject,organisms_present,soil_crust_type,guest_characters,what_we_see,interaction_notes,status,notes
+az_hwy39_l,AZ_HWY39_L.webp,az_hwy93,az_hwy93,left,,,Dark cyanobacteria,,,,draft,Pairs with AZ_HWY93.webp. Coords: N34.270170 W113.092278.
+az_hwy39_l_a,AZ_HWY39_L.webp,az_hwy93a,az_hwy93a,right,,,Dark cyanobacteria,,,,draft,Same foreground cutout; pairs with AZ_HWY93a.webp (US 93 / Yavapai alternate view).
+hwy191_l,HWY191_Campground_L.webp,hwy191,hwy191,left,,,Lichen,,,,draft,
+hwy191_r,HWY191_Campground_R.webp,hwy191,hwy191,right,,,Lichen,,,,draft,
+la_madera_moss_l,La_Madera_Ranch_Moss_L.webp,la_madera,la_madera,left,Moss,,Moss,,,,draft,Moss foreground variant.
+la_madera_chroo_r,La_Madera_Ranch_Chroo_R.webp,la_madera,la_madera,right,Chroococcidiopsis under quartz,Chroococcidiopsis,NA,,We are with Chroococcidiopsis under quartz; only extremely low light reaches beneath the rock.,,draft,
+la_madera_nostoc_r,La_Madera_Ranch_nostoc_R.webp,la_madera,la_madera,right,Nostoc,Nostoc,Dark cyanobacteria,,,,draft,Nostoc foreground variant.
+whitewater_l,Whitewater_CA_L.webp,whitewater,whitewater,left,,,Dark cyanobacteria,,,,draft,
+whitewater_r,Whitewater_CA_R.webp,whitewater,whitewater,right,,,Dark cyanobacteria,,,,draft,
+whitewater1_l,Whitewater_CA1_L.webp,whitewater,whitewater,left,,,Moss,,,,draft,Alternate foreground variant.
+vla_r,VLA_R.webp,vla,vla,right,Nostoc and scytonema,"Nostoc, scytonema",Dark cyanobacteria,,,,draft,
+gila_river1_r,Gila_River1_R.webp,gila_river,gila_river,right,,,Moss,,,,draft,
+gila_river2_r,Gila_River2_R.webp,gila_river,gila_river,right,,,Moss,,,,draft,Second foreground variant for gila_river.
+gravel_quarry_r,Gravel_Quarry_R.webp,gravel_quarry,gravel_quarry,right,,,Moss,,,,draft,
+casa_grande_l,Casa_Grande_L.webp,casa_grande,casa_grande,left,,,Dark cyanobacteria,,,,draft,Pairs with Casa_Grande.webp.
+mescalero_l,Mescalero_Sand_Dunes_L.webp,mescalero_sand,mescalero_sand,left,,,Dark cyanobacteria,,,,draft,Gypsum dune foreground; Marvin left.
+mescalero_r,Mescalero_Sand_Dunes_R.webp,mescalero_sand,mescalero_sand,right,,,Dark cyanobacteria,,,,draft,Gypsum dune foreground; Marvin right.
+mescalero1_l,Mescalero_Sand_Dunes1_L.webp,mescalero_sand,mescalero_sand,left,,,Dark cyanobacteria,,,,draft,Alternate left foreground variant for Mescalero dunes.
+valley_of_fires1_r,Valley_of_Fires1_R.webp,valley_of_fires1,valley_of_fires1,right,,,Dark cyanobacteria,,,,draft,Pairs with Valley_of_Fires1.webp.
+valley_of_fires_l,Valley_of_Fires_L.webp,valley_of_fires2,valley_of_fires2,left,,,Dark cyanobacteria,,,,draft,Pairs with Valley_of_Fires2.webp.
+valley_of_fires_r,Valley_of_Fires_R.webp,valley_of_fires2,valley_of_fires2,right,,,Dark cyanobacteria,,,,draft,Pairs with Valley_of_Fires2.webp.
+valley_of_fires3_l,Valley_of_Fires_L.webp,valley_of_fires3,valley_of_fires3,left,,,Dark cyanobacteria,,,,draft,Shared L cutout; pairs with Valley_of_Fires3.webp.
+valley_of_fires3_r,Valley_of_Fires_R.webp,valley_of_fires3,valley_of_fires3,right,,,Dark cyanobacteria,,,,draft,Shared R cutout; pairs with Valley_of_Fires3.webp.
+valley_of_fires4_l,Valley_of_Fires_L.webp,valley_of_fires4,valley_of_fires4,left,,,Dark cyanobacteria,,,,draft,Shared L cutout; pairs with Valley_of_Fires4.webp.
+valley_of_fires4_r,Valley_of_Fires_R.webp,valley_of_fires4,valley_of_fires4,right,,,Dark cyanobacteria,,,,draft,Shared R cutout; pairs with Valley_of_Fires4.webp.

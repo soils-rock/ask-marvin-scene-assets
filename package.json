@@ -1,0 +1,27 @@
+{
+  "name": "image-processing",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Scene image authoring and scene-pair review for ask-marvin",
+  "scripts": {
+    "apply:scene-png-edits": "node scripts/apply-scene-png-edits.mjs",
+    "convert:scene-png": "node scripts/apply-scene-png-edits.mjs",
+    "validate:assets": "node scripts/validate-scene-assets.mjs",
+    "validate:scene-pairs": "node scripts/validate-scene-playable-pairs.mjs",
+    "build:scene-registry": "node scripts/build-scene-registry.mjs",
+    "mirror:foreground": "node scripts/mirror-foreground-side.mjs",
+    "mirror:foreground:arm64": "arch -arm64 node scripts/mirror-foreground-side.mjs",
+    "bake:foreground": "node scripts/bake-foreground.mjs",
+    "bake:foreground:arm64": "arch -arm64 node scripts/bake-foreground.mjs",
+    "build:scene-registry": "node scripts/build-scene-registry.mjs",
+    "build:scene-pair-review": "node scripts/build-scene-pair-review.mjs",
+    "review:scenes": "npm run build:scene-registry && npm run build:scene-pair-review && node scripts/serve-scene-pair-review.mjs",
+    "review:scenes:arm64": "arch -arm64 npm run review:scenes",
+    "test:scene-pair-review": "node scripts/test-scene-pair-review-flow.mjs",
+    "reinstall:sharp": "npm install --include=optional sharp && npm rebuild sharp"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
+  }
+}

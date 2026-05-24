@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process: near_Mescalero_Sand_dunes</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+        
+        h1 { text-align: center; margin-bottom: 30px; color: #4a9eff; }
+        
+        .folder-info {
+            text-align: center;
+            font-size: 18px;
+            color: #66d9ef;
+            margin-bottom: 20px;
+        }
+        
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+            margin-bottom: 120px;
+        }
+        
+        .image-card {
+            background: #333;
+            border-radius: 8px;
+            padding: 15px;
+            transition: all 0.2s;
+        }
+        
+        .image-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 20px rgba(74, 158, 255, 0.3);
+        }
+        
+        .image-card.selected {
+            border: 3px solid #4a9eff;
+            background: #3a3a3a;
+        }
+        
+        .image-card.processed {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        .image-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .image-label {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #a0a0a0;
+        }
+        
+        .image-filename {
+            font-family: 'Courier New', monospace;
+            color: #f92672;
+            font-weight: bold;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 10px;
+            gap: 8px;
+        }
+        
+        .checkbox-container input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .checkbox-container label {
+            cursor: pointer;
+            font-weight: bold;
+            color: #4a9eff;
+        }
+        
+        .button-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+            flex-direction: column;
+        }
+        
+        .action-button {
+            background: #4a9eff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(74, 158, 255, 0.4);
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .action-button:hover {
+            background: #66b3ff;
+            transform: translateY(-2px);
+        }
+        
+        .action-button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        
+        .complete-button {
+            background: #66d966;
+        }
+        
+        .complete-button:hover {
+            background: #7fef7f;
+        }
+        
+        .selection-count {
+            background: #f92672;
+            color: white;
+            border-radius: 50%;
+            padding: 5px 10px;
+            font-size: 14px;
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            min-width: 25px;
+            text-align: center;
+        }
+        
+        .instructions {
+            background: #2a4a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #4a9eff;
+        }
+        
+        .instructions h2 { margin-bottom: 10px; color: #66d9ef; }
+        .instructions ul { margin-left: 20px; }
+        .instructions li { margin: 5px 0; }
+        
+        .lightbox {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .lightbox.active { display: flex; }
+        
+        .lightbox img {
+            max-width: 95%;
+            max-height: 95%;
+            object-fit: contain;
+        }
+        
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            font-size: 40px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🖼️ Process Background Images</h1>
+    <div class="folder-info">📁 near_Mescalero_Sand_dunes</div>
+    
+    <div class="instructions">
+        <h2>Instructions:</h2>
+        <ul>
+            <li>Click any image to view full-size</li>
+            <li><strong>Select 1 image:</strong> Saves it for processing</li>
+            <li><strong>Select 2+ images:</strong> Stacks them together</li>
+            <li>Click "Process Selection" - processed images will fade</li>
+            <li>When done with all images, click "Mark Folder Complete"</li>
+        </ul>
+    </div>
+    
+    <div class="image-grid">
+
+        <div class="image-card" id="card_0">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1456.png" alt="IMG_1456.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1456.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_0" 
+                       data-original="IMG_1456.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1456.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1456.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_0">Select this image</label>
+            </div>
+        </div>
+
+        <div class="image-card" id="card_1">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1457.png" alt="IMG_1457.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1457.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_1" 
+                       data-original="IMG_1457.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1457.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1457.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_1">Select this image</label>
+            </div>
+        </div>
+
+        <div class="image-card" id="card_2">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1458.png" alt="IMG_1458.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1458.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_2" 
+                       data-original="IMG_1458.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1458.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1458.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_2">Select this image</label>
+            </div>
+        </div>
+
+        <div class="image-card" id="card_3">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1459.png" alt="IMG_1459.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1459.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_3" 
+                       data-original="IMG_1459.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1459.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1459.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_3">Select this image</label>
+            </div>
+        </div>
+
+        <div class="image-card" id="card_4">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1460.png" alt="IMG_1460.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1460.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_4" 
+                       data-original="IMG_1460.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1460.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1460.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_4">Select this image</label>
+            </div>
+        </div>
+
+        <div class="image-card" id="card_5">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1461.png" alt="IMG_1461.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1461.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_5" 
+                       data-original="IMG_1461.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1461.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1461.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_5">Select this image</label>
+            </div>
+        </div>
+
+        <div class="image-card" id="card_6">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1462.png" alt="IMG_1462.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1462.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_6" 
+                       data-original="IMG_1462.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1462.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1462.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_6">Select this image</label>
+            </div>
+        </div>
+
+        <div class="image-card" id="card_7">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1463.png" alt="IMG_1463.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1463.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_7" 
+                       data-original="IMG_1463.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1463.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1463.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_7">Select this image</label>
+            </div>
+        </div>
+
+        <div class="image-card" id="card_8">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1464.png" alt="IMG_1464.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1464.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_8" 
+                       data-original="IMG_1464.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1464.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1464.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_8">Select this image</label>
+            </div>
+        </div>
+
+        <div class="image-card" id="card_9">
+            <img src="background_previews/near_Mescalero_Sand_dunes_IMG_1465.png" alt="IMG_1465.CR2" onclick="openLightbox(this.src)">
+            <div class="image-label">
+                <span class="image-filename">IMG_1465.CR2</span>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" 
+                       id="check_9" 
+                       data-original="IMG_1465.CR2"
+                       data-preview="near_Mescalero_Sand_dunes_IMG_1465.png"
+                       data-source-path="/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes/IMG_1465.CR2"
+                       onchange="toggleSelection(this)">
+                <label for="check_9">Select this image</label>
+            </div>
+        </div>
+
+    </div>
+    
+    <div class="button-container">
+        <button class="action-button" id="processButton" onclick="processSelection()" disabled>
+            ⚡ Process Selection
+            <span class="selection-count" id="selectionCount">0</span>
+        </button>
+        <button class="action-button complete-button" onclick="markComplete()">
+            ✅ Mark Folder Complete
+        </button>
+    </div>
+    
+    <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+        <span class="lightbox-close">&times;</span>
+        <img id="lightbox-img" src="" alt="Full size image">
+    </div>
+    
+    <script>
+        let selectedImages = [];
+        const folderName = 'near_Mescalero_Sand_dunes';
+        const folderPath = '/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/near_Mescalero_Sand_dunes';
+        
+        function toggleSelection(checkbox) {
+            const cardId = 'card_' + checkbox.id.replace('check_', '');
+            const card = document.getElementById(cardId);
+            
+            if (checkbox.checked) {
+                card.classList.add('selected');
+                selectedImages.push({
+                    original: checkbox.dataset.original,
+                    preview: checkbox.dataset.preview,
+                    source_path: checkbox.dataset.sourcePath,
+                    card_id: cardId
+                });
+            } else {
+                card.classList.remove('selected');
+                selectedImages = selectedImages.filter(
+                    img => img.source_path !== checkbox.dataset.sourcePath
+                );
+            }
+            
+            updateUI();
+        }
+        
+        function updateUI() {
+            const count = selectedImages.length;
+            document.getElementById('selectionCount').textContent = count;
+            document.getElementById('processButton').disabled = count === 0;
+            
+            const button = document.getElementById('processButton');
+            if (count === 1) {
+                button.innerHTML = '💾 Save Selected Image<span class="selection-count">' + count + '</span>';
+            } else if (count > 1) {
+                button.innerHTML = '📚 Stack & Save ' + count + ' Images<span class="selection-count">' + count + '</span>';
+            } else {
+                button.innerHTML = '⚡ Process Selection<span class="selection-count">0</span>';
+            }
+        }
+        
+        function processSelection() {
+            if (selectedImages.length === 0) return;
+            
+            const action = selectedImages.length === 1 ? 'select' : 'stack';
+            const data = {
+                action: action,
+                folder: folderName,
+                folder_path: folderPath,
+                images: selectedImages
+            };
+            
+            // Save request
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'process_request.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Mark processed cards
+            selectedImages.forEach(img => {
+                const card = document.getElementById(img.card_id);
+                if (card) {
+                    card.classList.add('processed');
+                    const checkbox = card.querySelector('input[type="checkbox"]');
+                    if (checkbox) checkbox.checked = false;
+                }
+            });
+            
+            // Clear selection
+            selectedImages = [];
+            updateUI();
+            
+            alert('Selection saved to process_request.json in Downloads!');
+        }
+        
+        function markComplete() {
+            if (confirm('Mark folder "' + folderName + '" as complete?\n\nThis will add "x" prefix and return to folder selection.')) {
+                // Save completion request
+                const data = {
+                    action: 'complete',
+                    folder: folderName,
+                    folder_path: folderPath
+                };
+                
+                const dataStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'complete_folder.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('Folder marked complete! Returning to folder selection...');
+                window.location.href = 'select_folder.html';
+            }
+        }
+        
+        function openLightbox(src) {
+            document.getElementById('lightbox').classList.add('active');
+            document.getElementById('lightbox-img').src = src;
+        }
+        
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+        }
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeLightbox();
+        });
+        
+        updateUI();
+    </script>
+</body>
+</html>

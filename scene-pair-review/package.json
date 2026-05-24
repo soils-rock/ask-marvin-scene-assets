@@ -1,0 +1,23 @@
+{
+  "name": "scene-pair-review",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Scene background×foreground pair review tooling (exported from ask-marvin)",
+  "scripts": {
+    "build:scene-registry": "node scripts/build-scene-registry.mjs",
+    "build:scene-pair-review": "node scripts/build-scene-pair-review.mjs",
+    "validate:scene-pairs": "node scripts/validate-scene-playable-pairs.mjs",
+    "mirror:foreground": "node scripts/mirror-foreground-side.mjs",
+    "mirror:foreground:arm64": "arch -arm64 node scripts/mirror-foreground-side.mjs",
+    "bake:foreground": "node scripts/bake-foreground.mjs",
+    "bake:foreground:arm64": "arch -arm64 node scripts/bake-foreground.mjs",
+    "reinstall:sharp": "npm install --include=optional sharp && npm rebuild sharp",
+    "review:scenes": "npm run build:scene-registry && npm run build:scene-pair-review && node scripts/serve-scene-pair-review.mjs",
+    "review:scenes:arm64": "arch -arm64 npm run review:scenes",
+    "test:flow": "node scripts/test-scene-pair-review-flow.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.5"
+  }
+}
