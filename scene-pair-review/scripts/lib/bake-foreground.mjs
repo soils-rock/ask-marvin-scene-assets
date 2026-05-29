@@ -17,7 +17,7 @@ import {
   sharpInstallHint,
 } from "./mirror-foreground.mjs";
 
-import { PACKAGE_ROOT } from "./paths.mjs";
+import { PACKAGE_ROOT } from "../../lib/paths.mjs";
 
 const BAKE_SCRIPT = path.join(PACKAGE_ROOT, "scripts/bake-foreground.mjs");
 

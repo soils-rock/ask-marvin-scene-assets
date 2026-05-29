@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { readPairRows } from "./scene-playable-pairs.mjs";
-import { FG_DIR as FG_DIR_PATH } from "./paths.mjs";
+import { FG_DIR as FG_DIR_PATH } from "../../lib/paths.mjs";
 
 export const FG_DIR = FG_DIR_PATH;
 

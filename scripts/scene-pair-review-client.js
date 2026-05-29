@@ -700,6 +700,10 @@
             data.foregroundFile +
             " and committed to CSV.";
         }
+        if (data.archiveSealed && data.archiveFolder) {
+          completeMsg +=
+            " Archive sealed as " + data.archiveFolder + " (skipped on future ingest).";
+        }
         showToast(completeMsg, true);
       })
       .catch(function (err) {

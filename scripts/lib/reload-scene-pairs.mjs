@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { sortPairsForReview } from "./archive-pairs.mjs";
 import { ASK_MARVIN_ROOT, PACKAGE_ROOT, SCENE_REGISTRY } from "./paths.mjs";
 
 export { ASK_MARVIN_ROOT as ROOT };
@@ -27,5 +28,5 @@ export function rebuildScenePairs() {
 export async function loadPlayablePairs() {
   const url = `${pathToFileURL(SCENE_REGISTRY).href}?t=${Date.now()}`;
   const mod = await import(url);
-  return mod.SCENE_PLAYABLE_PAIRS;
+  return sortPairsForReview(mod.SCENE_PLAYABLE_PAIRS);
 }

@@ -27,6 +27,7 @@ import {
   cloneForegroundForPair,
   ensureUniqueForegroundForPair,
 } from "./lib/clone-foreground.mjs";
+import { sealArchiveFolderForBackground } from "./lib/archive-pairs.mjs";
 import { commitPairRow } from "./lib/scene-playable-pairs.mjs";
 import {
   loadPlayablePairs,
@@ -263,12 +264,18 @@ async function handleCompletePair(req, res) {
     });
 
     rebuildScenePairs();
+
+    const seal = sealArchiveFolderForBackground(backgroundId);
+
     await respondWithPairs(res, {
       row,
       committed: true,
       foregroundFile: committedForegroundFile,
       cloned: Boolean(cloneResult.cloned),
       cloneFrom: cloneResult.cloned ? cloneResult.from : undefined,
+      archiveSealed: seal.sealed,
+      archiveFolder: seal.folder,
+      archiveSealNote: seal.reason,
     });
   } catch (err) {
     sendJson(res, 500, {

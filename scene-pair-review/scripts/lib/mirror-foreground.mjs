@@ -6,13 +6,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseForegroundBasename } from "./clone-foreground.mjs";
-import { FG_DIR as FG_DIR_PATH, IP_SCRIPTS_DIR, PACKAGE_ROOT } from "./paths.mjs";
+import { FG_DIR as FG_DIR_PATH, PACKAGE_ROOT } from "../../lib/paths.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const FG_DIR = FG_DIR_PATH;
 export const CANVAS_W = 1920;
 export const CANVAS_H = 1080;
-const MIRROR_SCRIPT = path.join(IP_SCRIPTS_DIR, "mirror-foreground-side.mjs");
+const MIRROR_SCRIPT = path.join(PACKAGE_ROOT, "scripts/mirror-foreground-side.mjs");
 
 export function inferDest(sourceFile) {
   const { stem, pairSuffix, isL, isR } = parseForegroundBasename(sourceFile);

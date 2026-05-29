@@ -8,24 +8,5 @@ dist/
 # macOS
 .DS_Store
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-.venv/
-venv/
-*.egg-info/
-.pytest_cache/
-
-# Claude_cya processed outputs (large PNG previews)
-Claude_cya/processed_backgrounds/
-Claude_cya/processed_foregrounds/
-**/processed_backgrounds/
-**/processed_foregrounds/
-
-# Local working / request files
-Claude_cya/**/process_request*.json
-Claude_cya/**/process_request_done*.json
-
 # Local path overrides (copy from paths.example.json)
 scene-pair-review/paths.json

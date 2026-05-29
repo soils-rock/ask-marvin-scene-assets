@@ -8,6 +8,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  isActiveArchiveBackground,
+  isArchiveSealedForBackground,
+  sortPairsForReview,
+} from "./lib/archive-pairs.mjs";
+import {
   ASK_MARVIN_ROOT,
   PACKAGE_ROOT,
   REVIEW_DIST,
@@ -87,10 +92,19 @@ ${inlined}
 async function main() {
   ensureRegistry();
   const { SCENE_PLAYABLE_PAIRS } = await import(SCENE_REGISTRY);
+  const pairs = sortPairsForReview(SCENE_PLAYABLE_PAIRS);
+  const activeArchive = pairs.filter((p) =>
+    isActiveArchiveBackground(p.backgroundId)
+  ).length;
+  const sealedCount = pairs.filter((p) =>
+    isArchiveSealedForBackground(p.backgroundId)
+  ).length;
   const css = fs.readFileSync(CSS_SRC, "utf8");
   fs.mkdirSync(REVIEW_DIST, { recursive: true });
-  fs.writeFileSync(REVIEW_HTML, buildHtml(SCENE_PLAYABLE_PAIRS, css));
-  console.log(`Wrote ${REVIEW_HTML} (${SCENE_PLAYABLE_PAIRS.length} pairs)`);
+  fs.writeFileSync(REVIEW_HTML, buildHtml(pairs, css));
+  console.log(
+    `Wrote ${REVIEW_HTML} (${pairs.length} pairs, ${activeArchive} active-archive first, ${sealedCount} sealed)`
+  );
 }
 
 main().catch((err) => {

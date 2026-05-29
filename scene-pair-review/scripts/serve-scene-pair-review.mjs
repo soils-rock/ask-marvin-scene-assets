@@ -33,9 +33,11 @@ import {
   rebuildScenePairs,
 } from "./lib/reload-scene-pairs.mjs";
 import {
-  PUBLIC_DIR,
+  PUBLIC_ROOT,
   REVIEW_DIST,
-} from "./lib/paths.mjs";
+} from "../lib/paths.mjs";
+
+const PUBLIC_DIR = PUBLIC_ROOT;
 
 const PORT = Number(process.env.SCENE_REVIEW_PORT) || 5174;
 const REVIEW_URL = `http://127.0.0.1:${PORT}/scene-pair-review/`;

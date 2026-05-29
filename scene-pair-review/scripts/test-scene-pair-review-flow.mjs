@@ -29,7 +29,7 @@ import {
   writePairRows,
   PAIRS_CSV,
 } from "./lib/scene-playable-pairs.mjs";
-import { REVIEW_HTML } from "./lib/paths.mjs";
+import { REVIEW_HTML } from "../lib/paths.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
