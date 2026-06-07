@@ -18,7 +18,6 @@
     "mirror:foreground:arm64": "arch -arm64 node scripts/mirror-foreground-side.mjs",
     "bake:foreground": "node scripts/bake-foreground.mjs",
     "bake:foreground:arm64": "arch -arm64 node scripts/bake-foreground.mjs",
-    "build:scene-registry": "node scripts/build-scene-registry.mjs",
     "build:scene-pair-review": "node scripts/build-scene-pair-review.mjs",
     "review:scenes": "npm run build:scene-registry && npm run build:scene-pair-review && node scripts/serve-scene-pair-review.mjs",
     "review:scenes:arm64": "arch -arm64 npm run review:scenes",

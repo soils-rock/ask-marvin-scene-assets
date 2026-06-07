@@ -302,8 +302,11 @@ function sendFile(res, filePath) {
 function openBrowser(url) {
   if (process.platform !== "darwin") return;
   try {
-    execSync(`open "${url}"`, { stdio: "ignore" });
+    execSync(`open -a "Google Chrome" "${url}"`, { stdio: "ignore" });
   } catch {
+    try {
+      execSync(`open "${url}"`, { stdio: "ignore" });
+    } catch {}
   }
 }
 
