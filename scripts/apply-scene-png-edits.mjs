@@ -5,7 +5,7 @@
  * When a PNG sits beside a matching .webp (same basename), treat the PNG as the
  * latest edit: normalize to 1920×1080, overwrite the .webp, delete the PNG.
  *
- * See docs/Animation_Primer.md — "PNG edit → WebP replacement".
+ * See docs/ANIMATION_PRIMER.md — "PNG edit → WebP replacement".
  */
 import fs from "fs";
 import path from "path";

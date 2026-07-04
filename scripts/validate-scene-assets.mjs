@@ -7,7 +7,6 @@ import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
 import {
-  ANIMATION_PRIMER_VERSION,
   SCENE_CANVAS,
   MARVIN_CANVAS,
   CHARACTER_ASSET,
@@ -138,7 +137,7 @@ function validateSceneDir(dirName) {
 
     if (ext !== ".webp") {
       warnings.push(
-        `${rel}: scene layer should be WebP per Animation Primer v${ANIMATION_PRIMER_VERSION} (found ${ext})`
+        `${rel}: scene layer should be WebP per ANIMATION_PRIMER.md (found ${ext})`
       );
       if (ext === ".png") {
         expectSize(rel, readImageSize(full), SCENE_CANVAS, "scene layer");
@@ -151,7 +150,7 @@ function validateSceneDir(dirName) {
   }
 }
 
-console.log(`Animation Primer v${ANIMATION_PRIMER_VERSION} — validating assets in public/images/`);
+console.log(`Animation Primer — validating assets in public/images/`);
 
 for (const dir of CHARACTER_ASSET.directories) {
   validateCharacterDir(dir);
@@ -170,7 +169,7 @@ if (errors.length) {
   console.error("\nAsset dimension errors:");
   errors.forEach((e) => console.error(`  ✗ ${e}`));
   console.error(
-    "\nFix exports to match docs/Animation_Primer.md (Section 0), then re-run npm run validate:assets"
+    "\nFix exports to match docs/ANIMATION_PRIMER.md (Section 0), then re-run npm run validate:assets"
   );
   process.exit(1);
 }
