@@ -26,6 +26,11 @@ export const PAIRS_CSV =
   process.env.SCENE_PAIRS_CSV ||
   path.join(ASK_MARVIN_ROOT, "data/scene_playable_pairs.csv");
 
+/** Background metadata (written by scene pair review Complete) */
+export const BG_CSV =
+  process.env.SCENE_BG_CSV ||
+  path.join(ASK_MARVIN_ROOT, "data/scene_background_metadata.csv");
+
 export const PUBLIC_DIR = path.join(ASK_MARVIN_ROOT, "public");
 export const FG_DIR = path.join(PUBLIC_DIR, "images/foreground");
 export const BG_DIR = path.join(PUBLIC_DIR, "images/background");

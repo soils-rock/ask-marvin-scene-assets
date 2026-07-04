@@ -64,12 +64,24 @@ ${css}
     </div>
     <p class="scene-pair-review__meta" id="meta"></p>
     <p class="scene-pair-review__meta-note" id="meta-note" hidden></p>
-    <div class="scene-pair-review__copy-helper" id="copy-helper" hidden></div>
     <div id="toast" class="scene-pair-review__toast" hidden role="status"></div>
   </header>
   <main class="scene-pair-review__main">
     <div id="single" class="scene-pair-review__single" hidden>
-      <div class="scene-pair-review__viewport" id="viewport"></div>
+      <div class="scene-pair-review__workspace">
+        <section class="scene-pair-review__preview" aria-label="Scaled pair preview">
+          <div class="scene-pair-review__preview-stage" id="preview-stage">
+            <div class="scene-pair-review__preview-frame" id="preview-frame">
+              <div class="scene-pair-review__viewport" id="viewport"></div>
+            </div>
+          </div>
+          <p class="scene-pair-review__preview-caption">
+            Scaled review preview only — source WebPs are not modified until you click
+            <strong>Apply to image</strong> or <strong>Complete</strong>.
+          </p>
+        </section>
+        <aside class="scene-pair-review__panel" id="copy-helper" hidden aria-label="Pairing and metadata"></aside>
+      </div>
     </div>
     <div id="grid" class="scene-pair-review__grid" hidden></div>
     <p class="scene-pair-review__hint" id="hint" hidden>
@@ -91,8 +103,15 @@ ${inlined}
 
 async function main() {
   ensureRegistry();
-  const { SCENE_PLAYABLE_PAIRS } = await import(SCENE_REGISTRY);
-  const pairs = sortPairsForReview(SCENE_PLAYABLE_PAIRS);
+  const { SCENE_PLAYABLE_PAIRS, BACKGROUND_META_BY_ID } = await import(SCENE_REGISTRY);
+  const pairs = sortPairsForReview(SCENE_PLAYABLE_PAIRS).map((pair) => {
+    const meta = BACKGROUND_META_BY_ID[pair.backgroundId];
+    return {
+      ...pair,
+      backgroundLat: meta?.lat ?? "",
+      backgroundLong: meta?.lon ?? "",
+    };
+  });
   const activeArchive = pairs.filter((p) =>
     isActiveArchiveBackground(p.backgroundId)
   ).length;

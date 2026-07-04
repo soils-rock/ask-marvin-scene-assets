@@ -30,6 +30,13 @@ import {
 import { sealArchiveFolderForBackground } from "./lib/archive-pairs.mjs";
 import { commitPairRow } from "./lib/scene-playable-pairs.mjs";
 import {
+  backgroundInsertDefaults,
+  findBackgroundRow,
+  readBackgroundRows,
+  resolveBackgroundCoordinatePatch,
+  upsertBackgroundRow,
+} from "./lib/scene-background-metadata.mjs";
+import {
   loadPlayablePairs,
   rebuildScenePairs,
 } from "./lib/reload-scene-pairs.mjs";
@@ -255,6 +262,34 @@ async function handleCompletePair(req, res) {
     });
     const committedForegroundFile = cloneResult.to;
 
+    const { rows: backgroundRows } = readBackgroundRows();
+    const existingBackground = findBackgroundRow(backgroundRows, backgroundId);
+    const coordResult = resolveBackgroundCoordinatePatch({
+      existingRow: existingBackground,
+      backgroundId,
+      bodyLat: body.backgroundLat,
+      bodyLong: body.backgroundLong,
+    });
+    if (!coordResult.ok) {
+      sendJson(res, 400, { ok: false, error: coordResult.error });
+      return;
+    }
+
+    let backgroundMetaResult;
+    if (coordResult.patch) {
+      const pairEntry = pairs.find((p) => p.backgroundId === backgroundId);
+      backgroundMetaResult = upsertBackgroundRow({
+        backgroundId,
+        patch: coordResult.patch,
+        insertDefaults: existingBackground
+          ? undefined
+          : backgroundInsertDefaults({
+              backgroundId,
+              backgroundPath: pairEntry?.background,
+            }),
+      });
+    }
+
     const row = commitPairRow({
       backgroundId,
       foregroundFile: committedForegroundFile,
@@ -273,6 +308,10 @@ async function handleCompletePair(req, res) {
       foregroundFile: committedForegroundFile,
       cloned: Boolean(cloneResult.cloned),
       cloneFrom: cloneResult.cloned ? cloneResult.from : undefined,
+      backgroundLat: coordResult.patch?.lat ?? existingBackground?.lat,
+      backgroundLong: coordResult.patch?.long ?? existingBackground?.long,
+      backgroundMetaUpdated: Boolean(coordResult.patch),
+      backgroundMetaCreated: Boolean(backgroundMetaResult?.created),
       archiveSealed: seal.sealed,
       archiveFolder: seal.folder,
       archiveSealNote: seal.reason,

@@ -6,6 +6,7 @@
   const CANVAS_W = 1920;
   const CANVAS_H = 1080;
   const STAGING_KEY = "ask-marvin-scene-pair-staging";
+  const BG_COORDS_STAGING_KEY = "ask-marvin-scene-background-coords-staging";
   const PAIRS = __PAIRS_JSON__;
   const DEFAULT_FG_ADJUST = { scaleX: 100, scaleY: 100 };
   const SCALE_PERCENT_MIN = 1;
@@ -268,6 +269,109 @@
     }
   }
 
+  function loadBackgroundCoordsStaging() {
+    try {
+      return JSON.parse(localStorage.getItem(BG_COORDS_STAGING_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function saveBackgroundCoordsStaging(coordsStaging) {
+    localStorage.setItem(BG_COORDS_STAGING_KEY, JSON.stringify(coordsStaging));
+  }
+
+  var backgroundCoordsById = {};
+  PAIRS.forEach(function (pair) {
+    if (!backgroundCoordsById[pair.backgroundId]) {
+      backgroundCoordsById[pair.backgroundId] = {
+        lat: String(pair.backgroundLat || ""),
+        long: String(pair.backgroundLong || ""),
+      };
+    }
+  });
+
+  function storedBackgroundCoords(backgroundId) {
+    return (
+      backgroundCoordsById[backgroundId] || {
+        lat: "",
+        long: "",
+      }
+    );
+  }
+
+  function effectiveBackgroundCoords(backgroundId) {
+    var base = storedBackgroundCoords(backgroundId);
+    var staged = bgCoordsStaging[backgroundId];
+    return {
+      lat: staged && staged.lat !== undefined ? staged.lat : base.lat,
+      long: staged && staged.long !== undefined ? staged.long : base.long,
+    };
+  }
+
+  function backgroundCoordsAreStored(backgroundId) {
+    var coords = effectiveBackgroundCoords(backgroundId);
+    var lat = String(coords.lat || "").trim();
+    var long = String(coords.long || "").trim();
+    if (!lat || !long) return false;
+    var latN = Number(lat);
+    var longN = Number(long);
+    return (
+      Number.isFinite(latN) &&
+      Number.isFinite(longN) &&
+      latN >= -90 &&
+      latN <= 90 &&
+      longN >= -180 &&
+      longN <= 180
+    );
+  }
+
+  function stageBackgroundCoords(backgroundId, updates) {
+    var base = storedBackgroundCoords(backgroundId);
+    var prev = bgCoordsStaging[backgroundId] || {};
+    var merged = {
+      lat:
+        updates.lat !== undefined
+          ? updates.lat
+          : prev.lat !== undefined
+            ? prev.lat
+            : base.lat,
+      long:
+        updates.long !== undefined
+          ? updates.long
+          : prev.long !== undefined
+            ? prev.long
+            : base.long,
+    };
+    bgCoordsStaging = Object.assign({}, bgCoordsStaging);
+    if (merged.lat === base.lat && merged.long === base.long) {
+      delete bgCoordsStaging[backgroundId];
+    } else {
+      bgCoordsStaging[backgroundId] = merged;
+    }
+    saveBackgroundCoordsStaging(bgCoordsStaging);
+  }
+
+  function clearBackgroundCoordsStagingFor(backgroundId) {
+    if (!bgCoordsStaging[backgroundId]) return;
+    bgCoordsStaging = Object.assign({}, bgCoordsStaging);
+    delete bgCoordsStaging[backgroundId];
+    saveBackgroundCoordsStaging(bgCoordsStaging);
+  }
+
+  function setCommittedBackgroundCoords(backgroundId, lat, long) {
+    backgroundCoordsById[backgroundId] = {
+      lat: String(lat || ""),
+      long: String(long || ""),
+    };
+    PAIRS.forEach(function (pair) {
+      if (pair.backgroundId === backgroundId) {
+        pair.backgroundLat = String(lat || "");
+        pair.backgroundLong = String(long || "");
+      }
+    });
+  }
+
   function saveStaging(staging) {
     localStorage.setItem(STAGING_KEY, JSON.stringify(staging));
   }
@@ -385,11 +489,14 @@
   let index = 0;
   let mode = "single";
   let staging = loadAndPruneStaging();
+  let bgCoordsStaging = loadBackgroundCoordsStaging();
 
   const elMeta = document.getElementById("meta");
   const elSingle = document.getElementById("single");
   const elGrid = document.getElementById("grid");
   const elViewport = document.getElementById("viewport");
+  const elPreviewStage = document.getElementById("preview-stage");
+  const elPreviewFrame = document.getElementById("preview-frame");
   const elHint = document.getElementById("hint");
   const elBtnMode = document.getElementById("btn-mode");
   const elMetaNote = document.getElementById("meta-note");
@@ -667,6 +774,7 @@
     }
     completing = true;
     renderCopyHelper(p);
+    var coords = effectiveBackgroundCoords(p.backgroundId);
     fetch("/api/complete-pair", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -677,6 +785,8 @@
           raw.foregroundFile !== p.foregroundFile ? raw.foregroundFile : undefined,
         marvinSide: marvinPlacementSide(p),
         notes: p.notes || "",
+        backgroundLat: coords.lat,
+        backgroundLong: coords.long,
       }),
     })
       .then(function (res) {
@@ -691,7 +801,18 @@
         clearStagingForPair(raw);
         staging = loadStaging();
         applyPairsUpdate(data);
+        if (data.backgroundLat !== undefined || data.backgroundLong !== undefined) {
+          setCommittedBackgroundCoords(
+            p.backgroundId,
+            data.backgroundLat,
+            data.backgroundLong
+          );
+          clearBackgroundCoordsStagingFor(p.backgroundId);
+        }
         var completeMsg = "Committed to scene_playable_pairs.csv and rebuilt registry.";
+        if (data.backgroundMetaUpdated) {
+          completeMsg += " Background coordinates saved.";
+        }
         if (data.cloned && data.cloneFrom) {
           completeMsg =
             "Cloned " +
@@ -809,6 +930,26 @@
       '<label class="scene-pair-review__notes-label">Notes (staging)<textarea id="staging-notes" rows="2">' +
       (p.notes || "").replace(/</g, "&lt;") +
       "</textarea></label>";
+    var bgCoords = effectiveBackgroundCoords(p.backgroundId);
+    var coordsLegend = backgroundCoordsAreStored(p.backgroundId)
+      ? "Background coordinates"
+      : "Background coordinates (required before Complete)";
+    html +=
+      '<fieldset class="scene-pair-review__bg-coords">' +
+      "<legend>" +
+      coordsLegend +
+      "</legend>" +
+      '<p class="scene-pair-review__bg-coords-hint">Shared across all foreground pairs for <code>' +
+      p.backgroundId +
+      "</code>. Staged in browser until <strong>Complete</strong>.</p>" +
+      '<div class="scene-pair-review__bg-coords-fields">' +
+      '<label>Latitude<input type="text" id="bg-lat" inputmode="decimal" autocomplete="off" value="' +
+      String(bgCoords.lat || "").replace(/"/g, "&quot;") +
+      '" /></label>' +
+      '<label>Longitude<input type="text" id="bg-long" inputmode="decimal" autocomplete="off" value="' +
+      String(bgCoords.long || "").replace(/"/g, "&quot;") +
+      '" /></label>' +
+      "</div></fieldset>";
     if (!p.missingFile) {
       var adj = normalizeFgAdjust(p.fgAdjust);
       html +=
@@ -889,6 +1030,18 @@
         stageCurrent({ notes: notesEl.value });
       };
     }
+    var bgLatEl = document.getElementById("bg-lat");
+    var bgLongEl = document.getElementById("bg-long");
+    if (bgLatEl) {
+      bgLatEl.oninput = function () {
+        stageBackgroundCoords(p.backgroundId, { lat: bgLatEl.value });
+      };
+    }
+    if (bgLongEl) {
+      bgLongEl.oninput = function () {
+        stageBackgroundCoords(p.backgroundId, { long: bgLongEl.value });
+      };
+    }
     var btn = document.getElementById("btn-mirror-cmd");
     if (btn) {
       btn.onclick = function () {
@@ -955,13 +1108,17 @@
   }
 
   function updateScale() {
-    const pad = 48;
-    const s = Math.min(
-      (window.innerWidth - pad) / CANVAS_W,
-      (window.innerHeight - 140) / CANVAS_H,
-      1
-    );
-    elViewport.style.transform = "scale(" + Math.max(0.2, s) + ")";
+    if (!elPreviewStage || !elPreviewFrame || !elViewport) return;
+    var pad = 12;
+    var availW = Math.max(0, elPreviewStage.clientWidth - pad);
+    var availH = Math.max(0, elPreviewStage.clientHeight - pad);
+    if (availW <= 0 || availH <= 0) return;
+    var s = Math.min(availW / CANVAS_W, availH / CANVAS_H, 1);
+    s = Math.max(0.12, s);
+    elPreviewFrame.style.width = Math.round(CANVAS_W * s) + "px";
+    elPreviewFrame.style.height = Math.round(CANVAS_H * s) + "px";
+    elViewport.style.transform = "scale(" + s + ")";
+    elViewport.style.transformOrigin = "top left";
   }
 
   function renderMeta() {
@@ -1009,8 +1166,9 @@
     const p = pair();
     if (!p) return;
     elViewport.innerHTML = layerStackHtml(p, "", imageEpoch);
-    updateScale();
     renderMeta();
+    updateScale();
+    window.requestAnimationFrame(updateScale);
   }
 
   function renderGrid() {
@@ -1091,6 +1249,13 @@
     if (mode === "single") updateScale();
     else elGrid.querySelectorAll(".scene-pair-review__card-thumb").forEach(fitCardThumb);
   });
+
+  if (typeof ResizeObserver !== "undefined" && elPreviewStage) {
+    var previewResizeObserver = new ResizeObserver(function () {
+      if (mode === "single") updateScale();
+    });
+    previewResizeObserver.observe(elPreviewStage);
+  }
 
   render();
 })();

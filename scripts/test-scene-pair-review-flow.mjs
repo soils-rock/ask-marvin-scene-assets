@@ -29,7 +29,14 @@ import {
   writePairRows,
   PAIRS_CSV,
 } from "./lib/scene-playable-pairs.mjs";
-import { REVIEW_HTML } from "./lib/paths.mjs";
+import {
+  coordinatesAreValid,
+  parseCoordinate,
+  readBackgroundRows,
+  resolveBackgroundCoordinatePatch,
+  upsertBackgroundRow,
+} from "./lib/scene-background-metadata.mjs";
+import { REVIEW_HTML, PACKAGE_ROOT } from "./lib/paths.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -327,6 +334,128 @@ function testBuiltReviewHtml() {
   console.log("built-review-html: ok (vla pair present)");
 }
 
+function testBackgroundCoordinateValidation() {
+  assert(parseCoordinate("34.5", "lat").ok, "valid lat");
+  assert(parseCoordinate("-113.09", "long").ok, "valid long");
+  assert(!parseCoordinate("", "lat").ok, "empty lat rejected");
+  assert(!parseCoordinate("abc", "long").ok, "non-numeric long rejected");
+  assert(!parseCoordinate("91", "lat").ok, "lat > 90 rejected");
+  assert(!parseCoordinate("-181", "long").ok, "long < -180 rejected");
+  assert(coordinatesAreValid("34.5", "-113"), "coordinatesAreValid true");
+  assert(!coordinatesAreValid("", "-113"), "coordinatesAreValid false when lat missing");
+
+  const missing = resolveBackgroundCoordinatePatch({
+    existingRow: { background_id: "test_bg", lat: "", long: "" },
+    backgroundId: "test_bg",
+    bodyLat: "",
+    bodyLong: "",
+  });
+  assert(!missing.ok, "missing stored coords requires body");
+  assert(
+    String(missing.error).includes("has no coordinates stored"),
+    "missing stored coords error message"
+  );
+
+  const valid = resolveBackgroundCoordinatePatch({
+    existingRow: { background_id: "test_bg", lat: "", long: "" },
+    backgroundId: "test_bg",
+    bodyLat: "34.5",
+    bodyLong: "-113.2",
+  });
+  assert(valid.ok && valid.patch.lat === "34.5" && valid.patch.long === "-113.2");
+
+  const storedNoBody = resolveBackgroundCoordinatePatch({
+    existingRow: { background_id: "az_hwy93", lat: "34.27", long: "-113.09" },
+    backgroundId: "az_hwy93",
+  });
+  assert(storedNoBody.ok && storedNoBody.patch === null, "stored coords allow Complete without body");
+
+  console.log("background-coordinate-validation: ok");
+}
+
+function testUpsertBackgroundRow() {
+  const tempDir = fs.mkdtempSync(path.join(PACKAGE_ROOT, ".bg-meta-test-"));
+  const tempCsv = path.join(tempDir, "scene_background_metadata.csv");
+  const header =
+    "background_id,file,lat,long,location_key,scene_set_id,place_name,region,state_or_country,habitat,elevation_m,climate_notes,where_we_are,notable_features,status,notes";
+  const seedRow =
+    "slice_test_bg,Slice_Test.webp,33.1,-112.1,slice_site,slice_test_bg,Slice Test,region,,habitat,,,,,ready,seed";
+  fs.writeFileSync(tempCsv, `${header}\n${seedRow}\n`);
+
+  const prev = process.env.SCENE_BG_CSV;
+  process.env.SCENE_BG_CSV = tempCsv;
+  try {
+    const { row, created } = upsertBackgroundRow({
+      backgroundId: "slice_test_bg",
+      patch: { lat: "33.2", long: "-112.2" },
+    });
+    assert(!created, "update should not create");
+    assert(row.lat === "33.2" && row.long === "-112.2", "patch applied");
+    assert(row.place_name === "Slice Test", "other columns preserved");
+    assert(row.file === "Slice_Test.webp", "file preserved");
+
+    const { row: inserted, created: insertedCreated } = upsertBackgroundRow({
+      backgroundId: "slice_new_bg",
+      patch: { lat: "35.0", long: "-109.0" },
+      insertDefaults: {
+        file: "Slice_New.webp",
+        status: "ready",
+        location_key: "slice_new_site",
+        scene_set_id: "slice_new_bg",
+        place_name: "Slice New",
+      },
+    });
+    assert(insertedCreated, "insert should create");
+    assert(inserted.lat === "35.0", "insert lat");
+    assert(inserted.notes === "", "insert fills missing header columns");
+
+    const { header: writtenHeader, rows } = readBackgroundRows();
+    assert(writtenHeader.length === 16, "header preserved");
+    assert(rows.length === 2, "two rows after insert");
+  } finally {
+    if (prev === undefined) delete process.env.SCENE_BG_CSV;
+    else process.env.SCENE_BG_CSV = prev;
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+
+  console.log("upsert-background-row: ok");
+}
+
+async function testCompletePairCoordinateApi() {
+  const { spawn } = await import("node:child_process");
+  const serverPath = path.join(__dirname, "serve-scene-pair-review.mjs");
+  const pairs = readPairRows();
+  const sample = pairs.find((row) => row.background_id && row.foreground_file);
+  assert(sample, "Need a playable pair row for complete API coordinate test");
+
+  const port = 5198;
+  const child = spawn(process.execPath, [serverPath], {
+    env: { ...process.env, SCENE_REVIEW_PORT: String(port) },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  await new Promise((r) => setTimeout(r, 500));
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/api/complete-pair`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        backgroundId: sample.background_id,
+        foregroundFile: sample.foreground_file,
+        marvinSide: sample.marvin_side || undefined,
+        notes: sample.notes || "",
+        backgroundLat: "999",
+        backgroundLong: "-113",
+      }),
+    });
+    const data = await res.json();
+    assert(res.status === 400 && !data.ok, "invalid lat should block Complete");
+    assert(String(data.error).includes("lat"), "error mentions lat");
+    console.log("complete-pair-coordinate-api: ok");
+  } finally {
+    child.kill("SIGTERM");
+  }
+}
+
 async function testBakeForeground() {
   const files = fs.readdirSync(FG_DIR).filter((f) => /\.webp$/i.test(f));
   assert(files.length > 0, "No foreground files to test bake");
@@ -374,12 +503,15 @@ async function main() {
   testFlipTargetsToSide();
   testUniqueForegroundNaming();
   testBuiltReviewHtml();
+  testBackgroundCoordinateValidation();
+  testUpsertBackgroundRow();
   await testMirrorRequiresOverwrite();
   await testMirrorFlipPixels();
   await testCloneForeground();
   await testEnsureUniqueOnComplete();
   await testBakeForeground();
   await testBakeApi();
+  await testCompletePairCoordinateApi();
   testCommitPairRow();
   console.log("All scene-pair-review flow tests passed.");
 }
