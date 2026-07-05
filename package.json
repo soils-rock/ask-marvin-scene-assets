@@ -22,7 +22,12 @@
     "review:scenes": "npm run build:scene-registry && npm run build:scene-pair-review && node scripts/serve-scene-pair-review.mjs",
     "review:scenes:arm64": "arch -arm64 npm run review:scenes",
     "test:scene-pair-review": "node scripts/test-scene-pair-review-flow.mjs",
+    "test:flat-archive-ingest": "node scripts/test-flat-archive-ingest.mjs",
+    "intake:images": "node scripts/serve-image-intake.mjs",
     "reinstall:sharp": "npm install --include=optional sharp && npm rebuild sharp"
+  },
+  "dependencies": {
+    "exifr": "^7.1.3"
   },
   "devDependencies": {
     "sharp": "^0.34.5"

@@ -1,0 +1,65 @@
+.ingest-orphans {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, sans-serif;
+  background: #1a1a1e;
+  color: #e8e8ec;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.ingest-orphans__panel {
+  max-width: 36rem;
+  width: 100%;
+  background: #25252c;
+  border: 1px solid #3a3a44;
+  border-radius: 8px;
+  padding: 1.5rem 1.75rem;
+}
+
+.ingest-orphans__lead {
+  color: #b8b8c0;
+  line-height: 1.5;
+}
+
+.ingest-orphans__list section {
+  margin: 1rem 0;
+}
+
+.ingest-orphans__list h2 {
+  font-size: 0.95rem;
+  margin: 0 0 0.35rem;
+  color: #c9a227;
+}
+
+.ingest-orphans__list ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.ingest-orphans__list li {
+  margin: 0.2rem 0;
+}
+
+.ingest-orphans__btn {
+  margin-top: 1.25rem;
+  padding: 0.55rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  background: #3d6eb5;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+}
+
+.ingest-orphans__btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.ingest-orphans__status {
+  margin-top: 0.75rem;
+  color: #8fd48f;
+}

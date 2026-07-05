@@ -931,17 +931,14 @@
       (p.notes || "").replace(/</g, "&lt;") +
       "</textarea></label>";
     var bgCoords = effectiveBackgroundCoords(p.backgroundId);
-    var coordsLegend = backgroundCoordsAreStored(p.backgroundId)
-      ? "Background coordinates"
-      : "Background coordinates (required before Complete)";
     html +=
       '<fieldset class="scene-pair-review__bg-coords">' +
       "<legend>" +
-      coordsLegend +
+      "Background coordinates (optional)" +
       "</legend>" +
       '<p class="scene-pair-review__bg-coords-hint">Shared across all foreground pairs for <code>' +
       p.backgroundId +
-      "</code>. Staged in browser until <strong>Complete</strong>.</p>" +
+      "</code>. Optional — if you enter coordinates, fill in both latitude and longitude; saved to background metadata on <strong>Complete</strong>.</p>" +
       '<div class="scene-pair-review__bg-coords-fields">' +
       '<label>Latitude<input type="text" id="bg-lat" inputmode="decimal" autocomplete="off" value="' +
       String(bgCoords.lat || "").replace(/"/g, "&quot;") +

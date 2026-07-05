@@ -130,7 +130,9 @@ export function validateCoordinateFields(lat, long) {
 }
 
 /**
- * Resolve lat/long patch for Complete from stored row + request body.
+ * Resolve optional lat/long patch from request body for upsertBackgroundRow.
+ * Both empty → no patch (Complete is not blocked). Both provided → validate and patch.
+ * Exactly one provided → reject (no partial coordinates).
  * @returns {{ ok: true, patch: Record<string, string>|null } | { ok: false, error: string }}
  */
 export function resolveBackgroundCoordinatePatch({
@@ -139,37 +141,29 @@ export function resolveBackgroundCoordinatePatch({
   bodyLat,
   bodyLong,
 }) {
-  const hasStored = coordinatesAreValid(existingRow?.lat, existingRow?.long);
-  const bodyLatProvided = bodyLat !== undefined && bodyLat !== null;
-  const bodyLongProvided = bodyLong !== undefined && bodyLong !== null;
-  const label = backgroundId || existingRow?.background_id || "background";
+  void existingRow;
+  void backgroundId;
 
-  if (!hasStored) {
-    const validated = validateCoordinateFields(bodyLat, bodyLong);
-    if (!validated.ok) {
-      return {
-        ok: false,
-        error: `Background ${label} has no coordinates stored. ${validated.error}`,
-      };
-    }
-    return { ok: true, patch: { lat: validated.lat, long: validated.long } };
-  }
+  const bodyLatProvided = String(bodyLat ?? "").trim() !== "";
+  const bodyLongProvided = String(bodyLong ?? "").trim() !== "";
 
   if (!bodyLatProvided && !bodyLongProvided) {
     return { ok: true, patch: null };
   }
 
-  const effectiveLat = bodyLatProvided ? bodyLat : existingRow.lat;
-  const effectiveLong = bodyLongProvided ? bodyLong : existingRow.long;
-  const validated = validateCoordinateFields(effectiveLat, effectiveLong);
+  if (bodyLatProvided !== bodyLongProvided) {
+    return {
+      ok: false,
+      error: "Enter both latitude and longitude, or leave both blank.",
+    };
+  }
+
+  const validated = validateCoordinateFields(bodyLat, bodyLong);
   if (!validated.ok) {
     return { ok: false, error: validated.error };
   }
 
-  const patch = {};
-  if (bodyLatProvided) patch.lat = validated.lat;
-  if (bodyLongProvided) patch.long = validated.long;
-  return { ok: true, patch };
+  return { ok: true, patch: { lat: validated.lat, long: validated.long } };
 }
 
 /**

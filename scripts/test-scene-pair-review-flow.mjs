@@ -350,10 +350,18 @@ function testBackgroundCoordinateValidation() {
     bodyLat: "",
     bodyLong: "",
   });
-  assert(!missing.ok, "missing stored coords requires body");
+  assert(missing.ok && missing.patch === null, "empty body allows Complete without coords");
+
+  const partialLat = resolveBackgroundCoordinatePatch({
+    existingRow: { background_id: "test_bg", lat: "", long: "" },
+    backgroundId: "test_bg",
+    bodyLat: "34.5",
+    bodyLong: "",
+  });
+  assert(!partialLat.ok, "lat without long is rejected");
   assert(
-    String(missing.error).includes("has no coordinates stored"),
-    "missing stored coords error message"
+    String(partialLat.error).includes("both latitude and longitude"),
+    "partial coords error message"
   );
 
   const valid = resolveBackgroundCoordinatePatch({
@@ -451,6 +459,20 @@ async function testCompletePairCoordinateApi() {
     assert(res.status === 400 && !data.ok, "invalid lat should block Complete");
     assert(String(data.error).includes("lat"), "error mentions lat");
     console.log("complete-pair-coordinate-api: ok");
+
+    const resOk = await fetch(`http://127.0.0.1:${port}/api/complete-pair`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        backgroundId: sample.background_id,
+        foregroundFile: sample.foreground_file,
+        marvinSide: sample.marvin_side || undefined,
+        notes: sample.notes || "",
+      }),
+    });
+    const dataOk = await resOk.json();
+    assert(resOk.ok && dataOk.ok, "Complete without coords should succeed");
+    console.log("complete-pair-no-coords-api: ok");
   } finally {
     child.kill("SIGTERM");
   }

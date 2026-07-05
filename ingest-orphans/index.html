@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unmatched archive PNGs</title>
+  <link rel="stylesheet" href="/ui/ingestOrphans.css" />
+</head>
+<body class="ingest-orphans">
+  <main class="ingest-orphans__panel">
+    <h1>Unmatched archive PNGs</h1>
+    <p class="ingest-orphans__lead">
+      These files have no same-basename twin in the other raw folder. They will
+      <strong>not</strong> be ingested. Matched pairs will proceed after you click OK.
+    </p>
+    <div id="orphan-list" class="ingest-orphans__list" aria-live="polite"></div>
+    <p id="status" class="ingest-orphans__status" hidden></p>
+    <button type="button" id="btn-ok" class="ingest-orphans__btn">OK — continue ingest</button>
+  </main>
+  <script>
+    (function () {
+      var listEl = document.getElementById("orphan-list");
+      var btnOk = document.getElementById("btn-ok");
+      var statusEl = document.getElementById("status");
+
+      fetch("/api/orphans")
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+          var orphans = data.orphans || [];
+          if (!orphans.length) {
+            listEl.innerHTML = "<p>No orphans.</p>";
+            return;
+          }
+          var byFolder = {};
+          orphans.forEach(function (o) {
+            if (!byFolder[o.folder]) byFolder[o.folder] = [];
+            byFolder[o.folder].push(o.filename);
+          });
+          var html = "";
+          Object.keys(byFolder).sort().forEach(function (folder) {
+            html += "<section><h2>" + folder + "</h2><ul>";
+            byFolder[folder].forEach(function (name) {
+              html += "<li><code>" + name.replace(/</g, "&lt;") + "</code></li>";
+            });
+            html += "</ul></section>";
+          });
+          listEl.innerHTML = html;
+        })
+        .catch(function (err) {
+          listEl.textContent = "Failed to load orphan list: " + err.message;
+        });
+
+      btnOk.onclick = function () {
+        btnOk.disabled = true;
+        fetch("/api/ack", { method: "POST" })
+          .then(function () {
+            statusEl.hidden = false;
+            statusEl.textContent = "Continuing ingest in terminal… You can close this tab.";
+          })
+          .catch(function (err) {
+            btnOk.disabled = false;
+            statusEl.hidden = false;
+            statusEl.textContent = "Ack failed: " + err.message;
+          });
+      };
+    })();
+  </script>
+</body>
+</html>

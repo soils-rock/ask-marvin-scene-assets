@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image intake — ask-marvin scene assets</title>
+  <link rel="stylesheet" href="ui/imageIntake.css" />
+</head>
+<body class="image-intake">
+  <header class="image-intake__header">
+    <h1>Image intake</h1>
+    <p class="image-intake__subtitle">
+      Bin images; mark BG/FG and save via Save BG / Save FG walkthroughs.
+      Requires <code>npm run intake:images</code> in a terminal — keep it running.
+    </p>
+  </header>
+
+  <section class="image-intake__controls" aria-label="Source and binning">
+    <label class="image-intake__field image-intake__field--grow">
+      <span>Source folder</span>
+      <input
+        type="text"
+        id="source-path"
+        placeholder="/Users/you/cr2_as_jpeg"
+        spellcheck="false"
+        autocomplete="off"
+      />
+    </label>
+    <button type="button" id="btn-load" class="image-intake__btn image-intake__btn--primary">
+      Load
+    </button>
+    <button type="button" id="btn-save-bg" class="image-intake__btn image-intake__btn--accent" disabled>
+      Save BG
+    </button>
+    <button type="button" id="btn-save-fg" class="image-intake__btn image-intake__btn--accent-fg" disabled>
+      Save FG
+    </button>
+    <label class="image-intake__field image-intake__field--narrow">
+      <span>Gap (minutes)</span>
+      <input type="number" id="gap-minutes" min="1" max="1440" value="30" />
+    </label>
+    <button type="button" id="btn-rebin" class="image-intake__btn" disabled>
+      Re-bin
+    </button>
+  </section>
+
+  <p id="error" class="image-intake__error" hidden role="alert"></p>
+  <p id="summary" class="image-intake__summary">Paste a folder path and load to begin.</p>
+
+  <main id="bins" class="image-intake__bins" aria-live="polite"></main>
+
+  <section id="selection-panel" class="image-intake__selection" hidden>
+    <h2>Marked images</h2>
+    <ul id="selection-list"></ul>
+  </section>
+
+  <div id="save-modal" class="image-intake__modal" hidden>
+    <div class="image-intake__modal-backdrop" data-action="close-modal"></div>
+    <div
+      class="image-intake__modal-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="save-modal-title"
+    >
+      <header class="image-intake__modal-header">
+        <h2 id="save-modal-title">Save backgrounds</h2>
+        <button type="button" class="image-intake__modal-close" data-action="close-modal" aria-label="Close">×</button>
+      </header>
+      <label id="save-modal-location-wrap" class="image-intake__modal-location" hidden>
+        <span>Location name</span>
+        <input
+          type="text"
+          id="save-modal-location"
+          placeholder="e.g. hwy89"
+          spellcheck="false"
+          autocomplete="off"
+        />
+      </label>
+      <div id="save-modal-body" class="image-intake__modal-body"></div>
+      <p id="save-modal-step" class="image-intake__modal-step"></p>
+      <p id="save-modal-notice" class="image-intake__modal-notice" hidden role="status"></p>
+      <footer class="image-intake__modal-footer">
+        <button type="button" id="save-modal-confirm" class="image-intake__btn image-intake__btn--primary">
+          Confirm
+        </button>
+        <button type="button" id="save-modal-skip" class="image-intake__btn">
+          Skip
+        </button>
+      </footer>
+    </div>
+  </div>
+
+  <script src="/image-intake-client.js?v=16"></script>
+</body>
+</html>
