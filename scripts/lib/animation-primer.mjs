@@ -1,6 +1,6 @@
 /**
  * Animation Primer constants (docs/ANIMATION_PRIMER.md in ask-marvin).
- * Duplicated here so Image_Processing tools do not import ask-marvin app code.
+ * Duplicated here so ask-marvin-scene-assets tools do not import ask-marvin app code.
  */
 
 export const SCENE_CANVAS = { width: 1920, height: 1080 };

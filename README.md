@@ -1,4 +1,4 @@
-# Image Processing (CyanoVerse)
+# ask-marvin-scene-assets (CyanoVerse)
 
 Authoring tools for **ask-marvin** scene art: PNG → WebP conversion and the **scene pair review** UI for staging background + foreground + Marvin pairings.
 
@@ -15,7 +15,7 @@ This tooling runs on the **Mac Mini**. The two repos are expected as siblings:
 
 ```
 ~/ask-marvin                        ← consumer app (git repo)
-~/CyanoVerse/Image_Processing       ← this repo (git repo)
+~/CyanoVerse/ask-marvin-scene-assets       ← this repo (git repo)
 ```
 
 Raw photo archive (external drive):
@@ -47,7 +47,7 @@ arch -arm64 zsh
 Then proceed:
 
 ```bash
-cd ~/CyanoVerse/Image_Processing
+cd ~/CyanoVerse/ask-marvin-scene-assets
 npm install
 arch -arm64 npm run reinstall:sharp
 ```
@@ -74,7 +74,7 @@ All active folders (no `x` prefix) will be picked up automatically in Step 2.
 This ingests new matched pairs from the archive, converts PNGs to WebP, and rebuilds the scene registry and review page:
 
 ```bash
-cd ~/CyanoVerse/Image_Processing
+cd ~/CyanoVerse/ask-marvin-scene-assets
 npm run refresh:matched-pairs
 ```
 

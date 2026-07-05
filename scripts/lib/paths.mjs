@@ -1,9 +1,9 @@
 /**
- * Paths for ask-marvin (consumer) vs Image_Processing (authoring tools).
+ * Paths for ask-marvin (consumer) vs ask-marvin-scene-assets (authoring tools).
  *
  * Defaults assume sibling repos:
  *   ~/ask-marvin
- *   ~/CyanoVerse/Image_Processing
+ *   ~/CyanoVerse/ask-marvin-scene-assets
  *
  * Override:
  *   ASK_MARVIN_ROOT=/path/to/ask-marvin
@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Image_Processing repo root */
+/** ask-marvin-scene-assets repo root */
 export const PACKAGE_ROOT = path.resolve(__dirname, "../..");
 
 /** ask-marvin dev app (scene WebPs + pairing CSV target) */
