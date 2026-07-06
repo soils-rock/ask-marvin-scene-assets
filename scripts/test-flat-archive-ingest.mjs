@@ -77,6 +77,7 @@ function testScanMatchedAndOrphans() {
       const { matched, orphans } = pairs.scanFlatArchive();
       assert(matched.length === 1, "one matched pair");
       assert(matched[0].stem === "Atacama-1", "stem");
+      assert(matched[0].webpFile === "Atacama-1.webp", "webpFile");
       assert(orphans.length === 1, "one orphan");
       assert(orphans[0].filename === "Chile-only.png", "orphan file");
       assert(orphans[0].folder === "Backgrounds_Raw", "orphan folder");
@@ -89,10 +90,16 @@ function testScanMatchedAndOrphans() {
 }
 
 async function testStemToBackgroundId() {
-  const { stemToBackgroundId, processedDestinations, inferMarvinSide } =
-    await import("./lib/flat-archive-pairs.mjs");
+  const {
+    stemToBackgroundId,
+    processedDestinations,
+    inferMarvinSide,
+    webpFileNameFromBasename,
+  } = await import("./lib/flat-archive-pairs.mjs");
   assert(stemToBackgroundId("Atacama-1") === "atacama_1", "atacama_1");
   assert(stemToBackgroundId("Great-wall-1") === "great_wall_1", "great_wall_1");
+  assert(webpFileNameFromBasename("Atacama-1.png") === "Atacama-1.webp", "webp from basename");
+  assert(webpFileNameFromBasename("Great-wall-1.PNG") === "Great-wall-1.webp", "webp case on ext");
   const dest = processedDestinations("Atacama-1");
   assert(dest.bg.endsWith("Atacama-1__bg.png"), "processed bg name");
   assert(dest.fg.endsWith("Atacama-1__fg.png"), "processed fg name");
@@ -133,11 +140,48 @@ async function testProcessedCollisionSkip() {
   }
 }
 
+async function testIngestWebpFileMatchesDiskAndCsv() {
+  const env = setupTempArchive();
+  const sharp = (await import("sharp")).default;
+  const pngBuf = await sharp({
+    create: { width: 1920, height: 1080, channels: 3, background: { r: 1, g: 2, b: 3 } },
+  })
+    .png()
+    .toBuffer();
+  fs.writeFileSync(path.join(env.bg, "Atacama-1.png"), pngBuf);
+  fs.writeFileSync(path.join(env.fg, "Atacama-1.png"), pngBuf);
+
+  const { pairs, ingest, restore } = await loadFlatModules(env);
+  try {
+    const { matched } = pairs.scanFlatArchive();
+    assert(matched.length === 1, "one pair");
+    assert(matched[0].webpFile === "Atacama-1.webp", "canonical webpFile on pair");
+
+    const results = await ingest.ingestMatchedPairs(matched);
+    assert(results.succeeded === 1, "ingest succeeded");
+
+    const bgDisk = fs.readdirSync(path.join(env.ask, "public/images/background"));
+    const fgDisk = fs.readdirSync(path.join(env.ask, "public/images/foreground"));
+    assert(bgDisk.includes("Atacama-1.webp"), "bg webp on disk");
+    assert(fgDisk.includes("Atacama-1.webp"), "fg webp on disk");
+
+    const bgCsv = fs.readFileSync(path.join(env.ask, "data/scene_background_metadata.csv"), "utf8");
+    const fgCsv = fs.readFileSync(path.join(env.ask, "data/scene_foreground_metadata.csv"), "utf8");
+    assert(bgCsv.includes("Atacama-1.webp"), "bg csv file field");
+    assert(fgCsv.includes("Atacama-1.webp"), "fg csv file field");
+    console.log("ingest-webp-file-matches-disk-and-csv: ok");
+  } finally {
+    restore();
+    fs.rmSync(env.root, { recursive: true, force: true });
+  }
+}
+
 async function main() {
   await testScanMatchedAndOrphans();
   await testStemToBackgroundId();
   await testOrphanDialogSkip();
   await testProcessedCollisionSkip();
+  await testIngestWebpFileMatchesDiskAndCsv();
   console.log("All flat archive ingest tests passed.");
 }
 

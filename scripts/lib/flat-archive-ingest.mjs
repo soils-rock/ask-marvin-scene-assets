@@ -205,7 +205,7 @@ function moveFileAtomicPair(firstSrc, firstDest, secondSrc, secondDest) {
 }
 
 /**
- * @param {Array<{ basename: string, stem: string, bgPath: string, fgPath: string }>} matched
+ * @param {Array<{ basename: string, stem: string, webpFile: string, bgPath: string, fgPath: string }>} matched
  */
 export async function ingestMatchedPairs(matched) {
   fs.mkdirSync(processedDir(), { recursive: true });
@@ -231,8 +231,7 @@ export async function ingestMatchedPairs(matched) {
   };
 
   for (const pair of matched) {
-    const { basename, stem, bgPath, fgPath } = pair;
-    const webpFile = `${stem}.webp`;
+    const { basename, stem, webpFile, bgPath, fgPath } = pair;
     const destWebpBg = path.join(bgDir, webpFile);
     const destWebpFg = path.join(fgDir, webpFile);
     const { bg: destProcessedBg, fg: destProcessedFg } = processedDestinations(stem);

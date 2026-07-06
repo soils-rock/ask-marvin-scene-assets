@@ -300,7 +300,43 @@
     );
   }
 
-  function effectiveBackgroundCoords(backgroundId) {
+  function committedCoordsFromPair(pair) {
+    return {
+      lat: String(pair && pair.backgroundLat != null ? pair.backgroundLat : ""),
+      long: String(pair && pair.backgroundLong != null ? pair.backgroundLong : ""),
+    };
+  }
+
+  function syncCommittedCoordsFromPair(pair) {
+    if (!pair || !pair.backgroundId) return;
+    var coords = committedCoordsFromPair(pair);
+    if (coords.lat || coords.long) {
+      backgroundCoordsById[pair.backgroundId] = coords;
+    }
+  }
+
+  function pruneStaleCoordsStaging(backgroundId) {
+    var base = storedBackgroundCoords(backgroundId);
+    var staged = bgCoordsStaging[backgroundId];
+    if (!staged) return;
+    var stagedLat = staged.lat !== undefined ? staged.lat : base.lat;
+    var stagedLong = staged.long !== undefined ? staged.long : base.long;
+    if (stagedLat === base.lat && stagedLong === base.long) {
+      bgCoordsStaging = Object.assign({}, bgCoordsStaging);
+      delete bgCoordsStaging[backgroundId];
+      saveBackgroundCoordsStaging(bgCoordsStaging);
+      return;
+    }
+    if ((base.lat || base.long) && stagedLat === "" && stagedLong === "") {
+      bgCoordsStaging = Object.assign({}, bgCoordsStaging);
+      delete bgCoordsStaging[backgroundId];
+      saveBackgroundCoordsStaging(bgCoordsStaging);
+    }
+  }
+
+  function effectiveBackgroundCoords(backgroundId, pair) {
+    if (pair) syncCommittedCoordsFromPair(pair);
+    pruneStaleCoordsStaging(backgroundId);
     var base = storedBackgroundCoords(backgroundId);
     var staged = bgCoordsStaging[backgroundId];
     return {
@@ -309,21 +345,183 @@
     };
   }
 
-  function backgroundCoordsAreStored(backgroundId) {
-    var coords = effectiveBackgroundCoords(backgroundId);
+  /** Keep in sync with scripts/lib/parse-coordinate.mjs */
+  function normalizeCoordinateText(value) {
+    return String(value == null ? "" : value)
+      .trim()
+      .replace(/[\u2018\u2019\u2032]/g, "'")
+      .replace(/[\u201c\u201d\u2033]/g, '"');
+  }
+
+  function parseCoordinateInput(value, axis) {
+    var s = normalizeCoordinateText(value);
+    if (!s) return { ok: false, error: axis + " is required." };
+
+    if (/^[+-]?\d+(?:\.\d+)?$/.test(s)) {
+      var n = Number(s);
+      if (!Number.isFinite(n)) {
+        return { ok: false, error: axis + " must be a finite decimal number." };
+      }
+      if (axis === "lat" && (n < -90 || n > 90)) {
+        return { ok: false, error: "lat must be between -90 and 90." };
+      }
+      if (axis === "long" && (n < -180 || n > 180)) {
+        return { ok: false, error: "long must be between -180 and 180." };
+      }
+      return { ok: true, value: String(n) };
+    }
+
+    var dmsMatch = s.match(
+      /^([+-]?\d+(?:\.\d+)?)\s*(?:°|º|d)?\s*(\d+(?:\.\d+)?)?\s*(?:['′\u2018\u2019]|m)?\s*(\d+(?:\.\d+)?)?\s*(?:["″\u201c\u201d]|s)?\s*([NnSsEeWw])?\s*$/i
+    );
+    if (!dmsMatch) {
+      return {
+        ok: false,
+        error:
+          axis +
+          " must be decimal degrees (e.g. -23.747658) or DMS (e.g. 23°44'51.57\"S).",
+      };
+    }
+
+    var leadingSign = dmsMatch[1].charAt(0) === "-" ? -1 : 1;
+    var degrees = Math.abs(Number(dmsMatch[1]));
+    var minutes = dmsMatch[2] ? Number(dmsMatch[2]) : 0;
+    var seconds = dmsMatch[3] ? Number(dmsMatch[3]) : 0;
+    var direction = dmsMatch[4] || "";
+    if (minutes < 0 || minutes >= 60 || seconds < 0 || seconds >= 60) {
+      return {
+        ok: false,
+        error: axis + " minutes and seconds must be between 0 and 59.99.",
+      };
+    }
+
+    var sign = leadingSign;
+    if (direction) {
+      var dir = direction.toUpperCase();
+      var dirAxis = dir === "N" || dir === "S" ? "lat" : dir === "E" || dir === "W" ? "long" : null;
+      if (!dirAxis) {
+        return { ok: false, error: axis + " direction must be N, S, E, or W." };
+      }
+      if (dirAxis !== axis) {
+        return {
+          ok: false,
+          error: axis === "lat" ? "Latitude direction must be N or S." : "Longitude direction must be E or W.",
+        };
+      }
+      sign = dir === "S" || dir === "W" ? -1 : 1;
+    }
+
+    var decimal = sign * (degrees + minutes / 60 + seconds / 3600);
+    if (axis === "lat" && (decimal < -90 || decimal > 90)) {
+      return { ok: false, error: "lat must be between -90 and 90." };
+    }
+    if (axis === "long" && (decimal < -180 || decimal > 180)) {
+      return { ok: false, error: "long must be between -180 and 180." };
+    }
+    return {
+      ok: true,
+      value: decimal
+        .toFixed(8)
+        .replace(/\.?0+$/, "")
+        .replace(/^-0$/, "0"),
+    };
+  }
+
+  function backgroundCoordsAreStored(backgroundId, pair) {
+    var coords = effectiveBackgroundCoords(backgroundId, pair);
+    return (
+      parseCoordinateInput(coords.lat, "lat").ok &&
+      parseCoordinateInput(coords.long, "long").ok
+    );
+  }
+
+  function coordinateEntryStatus(backgroundId, pair) {
+    var coords = effectiveBackgroundCoords(backgroundId, pair);
     var lat = String(coords.lat || "").trim();
     var long = String(coords.long || "").trim();
-    if (!lat || !long) return false;
-    var latN = Number(lat);
-    var longN = Number(long);
-    return (
-      Number.isFinite(latN) &&
-      Number.isFinite(longN) &&
-      latN >= -90 &&
-      latN <= 90 &&
-      longN >= -180 &&
-      longN <= 180
-    );
+    if (!lat && !long) return "empty";
+    if (lat && long) {
+      if (backgroundCoordsAreStored(backgroundId, pair)) return "complete";
+      return "invalid";
+    }
+    return "partial";
+  }
+
+  var COORD_FORMAT_REQUIREMENTS =
+    "• Use both latitude and longitude together, or leave both empty\n" +
+    "• Decimal degrees: -23.747658, 34.27017\n" +
+    "• DMS: 23°44'51.57\"S, 68°15'30\"W\n" +
+    "• Latitude: N or S (decimal -90…90)\n" +
+    "• Longitude: E or W (decimal -180…180)";
+
+  function getCoordinateValidationErrors(backgroundId, pair) {
+    var coords = effectiveBackgroundCoords(backgroundId, pair);
+    var lat = String(coords.lat || "").trim();
+    var long = String(coords.long || "").trim();
+    var errors = [];
+    if (!lat || !long) {
+      errors.push("Enter both latitude and longitude, or leave both empty.");
+      return errors;
+    }
+    var latResult = parseCoordinateInput(coords.lat, "lat");
+    var longResult = parseCoordinateInput(coords.long, "long");
+    if (!latResult.ok) errors.push("Latitude: " + latResult.error);
+    if (!longResult.ok) errors.push("Longitude: " + longResult.error);
+    return errors;
+  }
+
+  function showCoordinateFormatModal(errors) {
+    var message = COORD_FORMAT_REQUIREMENTS;
+    if (errors && errors.length) {
+      message += "\n\n" + errors.join("\n");
+    }
+    showCoordsWarningModal("Invalid coordinate format", message, [
+      { label: "OK", primary: true },
+    ]);
+  }
+
+  var elCoordsWarningModal = document.getElementById("coords-warning-modal");
+  var elCoordsWarningMessage = document.getElementById("coords-warning-message");
+  var elCoordsWarningActions = document.getElementById("coords-warning-actions");
+  var elCoordsWarningTitle = document.getElementById("coords-warning-title");
+  var elCoordsWarningBackdrop = document.getElementById("coords-warning-backdrop");
+
+  function closeCoordsWarningModal() {
+    if (!elCoordsWarningModal) return;
+    elCoordsWarningModal.hidden = true;
+    if (elCoordsWarningActions) elCoordsWarningActions.innerHTML = "";
+  }
+
+  function showCoordsWarningModal(title, message, actions) {
+    if (!elCoordsWarningModal || !elCoordsWarningMessage || !elCoordsWarningActions) {
+      return false;
+    }
+    if (elCoordsWarningTitle) elCoordsWarningTitle.textContent = title;
+    elCoordsWarningMessage.textContent = message;
+    elCoordsWarningMessage.style.whiteSpace = "pre-line";
+    elCoordsWarningActions.innerHTML = "";
+    actions.forEach(function (action) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = action.label;
+      if (action.primary) {
+        btn.style.background = "#3a6ea5";
+        btn.style.color = "#fff";
+        btn.style.border = "1px solid #4a7eb5";
+        btn.style.borderRadius = "4px";
+      }
+      btn.onclick = function () {
+        closeCoordsWarningModal();
+        if (action.onClick) action.onClick();
+      };
+      elCoordsWarningActions.appendChild(btn);
+    });
+    elCoordsWarningModal.hidden = false;
+    return true;
+  }
+
+  if (elCoordsWarningBackdrop) {
+    elCoordsWarningBackdrop.onclick = closeCoordsWarningModal;
   }
 
   function stageBackgroundCoords(backgroundId, updates) {
@@ -490,6 +688,7 @@
   let mode = "single";
   let staging = loadAndPruneStaging();
   let bgCoordsStaging = loadBackgroundCoordsStaging();
+  Object.keys(backgroundCoordsById).forEach(pruneStaleCoordsStaging);
 
   const elMeta = document.getElementById("meta");
   const elSingle = document.getElementById("single");
@@ -530,12 +729,39 @@
   }
 
   function applyPairsUpdate(data) {
-    if (data.pairs && data.pairs.length) {
-      PAIRS.length = 0;
-      data.pairs.forEach(function (p) {
-        PAIRS.push(p);
-      });
+    if (!Array.isArray(data.pairs)) return;
+    PAIRS.length = 0;
+    data.pairs.forEach(function (p) {
+      PAIRS.push(p);
+      if (p.backgroundId) {
+        backgroundCoordsById[p.backgroundId] = {
+          lat: String(p.backgroundLat || ""),
+          long: String(p.backgroundLong || ""),
+        };
+      }
+    });
+  }
+
+  function focusCurrentPairAfterUpdate(backgroundId, foregroundFile) {
+    var nextIndex = -1;
+    for (var i = 0; i < PAIRS.length; i++) {
+      if (
+        PAIRS[i].backgroundId === backgroundId &&
+        PAIRS[i].foregroundFile === foregroundFile
+      ) {
+        nextIndex = i;
+        break;
+      }
     }
+    if (nextIndex < 0) {
+      for (var j = 0; j < PAIRS.length; j++) {
+        if (PAIRS[j].backgroundId === backgroundId) {
+          nextIndex = j;
+          break;
+        }
+      }
+    }
+    if (nextIndex >= 0) index = nextIndex;
   }
 
   function stageCurrent(updates) {
@@ -762,19 +988,13 @@
       });
   }
 
-  function runComplete() {
+  function submitCompletePair() {
     var raw = pairRaw();
     var p = pair();
     if (!raw || !p || completing) return;
-    if (!isDefaultFgAdjust(p.fgAdjust)) {
-      runBake(function () {
-        runComplete();
-      });
-      return;
-    }
     completing = true;
     renderCopyHelper(p);
-    var coords = effectiveBackgroundCoords(p.backgroundId);
+    var coords = effectiveBackgroundCoords(p.backgroundId, p);
     fetch("/api/complete-pair", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -801,6 +1021,7 @@
         clearStagingForPair(raw);
         staging = loadStaging();
         applyPairsUpdate(data);
+        focusCurrentPairAfterUpdate(p.backgroundId, data.foregroundFile || p.foregroundFile);
         if (data.backgroundLat !== undefined || data.backgroundLong !== undefined) {
           setCommittedBackgroundCoords(
             p.backgroundId,
@@ -821,19 +1042,70 @@
             data.foregroundFile +
             " and committed to CSV.";
         }
-        if (data.archiveSealed && data.archiveFolder) {
-          completeMsg +=
-            " Archive sealed as " + data.archiveFolder + " (skipped on future ingest).";
-        }
         showToast(completeMsg, true);
       })
       .catch(function (err) {
-        showToast(err.message || String(err), false);
+        var msg = err.message || String(err);
+        if (/lat|long|latitude|longitude|coordinate/i.test(msg)) {
+          showCoordinateFormatModal([msg]);
+        } else {
+          showToast(msg, false);
+        }
       })
       .finally(function () {
         completing = false;
         render();
       });
+  }
+
+  function runComplete() {
+    var raw = pairRaw();
+    var p = pair();
+    if (!raw || !p || completing) return;
+    if (!isDefaultFgAdjust(p.fgAdjust)) {
+      runBake(function () {
+        runComplete();
+      });
+      return;
+    }
+
+    var coordStatus = coordinateEntryStatus(p.backgroundId, p);
+    if (coordStatus === "partial") {
+      showCoordsWarningModal(
+        "Incomplete coordinates",
+        "Enter both latitude and longitude, or leave both empty.",
+        [{ label: "OK", primary: true }]
+      );
+      return;
+    }
+    if (coordStatus === "invalid") {
+      showCoordinateFormatModal(getCoordinateValidationErrors(p.backgroundId, p));
+      return;
+    }
+    if (coordStatus === "empty") {
+      var shown = showCoordsWarningModal(
+        "Background coordinates missing",
+        "Latitude and longitude are not set for " + p.backgroundId + ".",
+        [
+          {
+            label: "Add coordinates",
+            onClick: function () {
+              var latEl = document.getElementById("bg-lat");
+              if (latEl) latEl.focus();
+            },
+          },
+          {
+            label: "Complete without coordinates",
+            primary: true,
+            onClick: submitCompletePair,
+          },
+        ]
+      );
+      if (!shown) submitCompletePair();
+      return;
+    }
+
+    submitCompletePair();
   }
 
   function pairingStatusHtml(p) {
@@ -930,15 +1202,10 @@
       '<label class="scene-pair-review__notes-label">Notes (staging)<textarea id="staging-notes" rows="2">' +
       (p.notes || "").replace(/</g, "&lt;") +
       "</textarea></label>";
-    var bgCoords = effectiveBackgroundCoords(p.backgroundId);
+    var bgCoords = effectiveBackgroundCoords(p.backgroundId, p);
     html +=
       '<fieldset class="scene-pair-review__bg-coords">' +
-      "<legend>" +
-      "Background coordinates (optional)" +
-      "</legend>" +
-      '<p class="scene-pair-review__bg-coords-hint">Shared across all foreground pairs for <code>' +
-      p.backgroundId +
-      "</code>. Optional — if you enter coordinates, fill in both latitude and longitude; saved to background metadata on <strong>Complete</strong>.</p>" +
+      "<legend>Background coordinates</legend>" +
       '<div class="scene-pair-review__bg-coords-fields">' +
       '<label>Latitude<input type="text" id="bg-lat" inputmode="decimal" autocomplete="off" value="' +
       String(bgCoords.lat || "").replace(/"/g, "&quot;") +

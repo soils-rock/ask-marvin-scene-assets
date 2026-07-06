@@ -22,11 +22,12 @@ Raw photo archive (external drive):
 
 ```
 /Volumes/Marvin/CyanoVerse_Source_Files/
-├── Backgrounds_Raw/    ← one folder per scene, named e.g. "Utting"
-└── Foregrounds_Raw/    ← matching folder, same name e.g. "Utting"
+├── Backgrounds_Raw/    ← flat PNG files (same basename = matched pair)
+├── Foregrounds_Raw/
+└── Processed_images/   ← ingested PNGs moved here as {stem}__bg.png / {stem}__fg.png
 ```
 
-A folder pair is **active** if neither folder has an `x` prefix. After a scene is completed, both folders are renamed to `xUtting` and skipped on future ingests.
+Matched pairs are same-basename PNGs at the roots of `Backgrounds_Raw` and `Foregrounds_Raw`. After ingest, raw PNGs move to `Processed_images` and are skipped on re-ingest.
 
 ---
 
@@ -58,33 +59,26 @@ The `reinstall:sharp` step is required on Apple Silicon and must be run after ev
 
 ## Adding a new scene — step by step
 
-### Step 1 — Prepare the archive folders
+### Step 1 — Prepare the archive files
 
-Make sure matching background and foreground folders exist on the archive drive for your new scene. Folders with an `x` prefix are treated as sealed and will be skipped — do not add the prefix until the scene is complete.
+Save matching background and foreground PNGs to the archive drive with the **same basename** in each raw folder (use `npm run intake:images` or copy manually).
 
 ```
-/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/<SceneName>/
-/Volumes/Marvin/CyanoVerse_Source_Files/Foregrounds_Raw/<SceneName>/
+/Volumes/Marvin/CyanoVerse_Source_Files/Backgrounds_Raw/<SceneName>.png
+/Volumes/Marvin/CyanoVerse_Source_Files/Foregrounds_Raw/<SceneName>.png
 ```
-
-All active folders (no `x` prefix) will be picked up automatically in Step 2.
 
 ### Step 2 — Ingest and convert
 
-This ingests new matched pairs from the archive, converts PNGs to WebP, and rebuilds the scene registry and review page:
+This ingests new matched pairs from the archive and converts PNGs to WebP:
 
 ```bash
 cd ~/CyanoVerse/ask-marvin-scene-assets
-npm run refresh:matched-pairs
+npm run ingest:matched-pairs
+npm run build:scene-registry && npm run build:scene-pair-review
 ```
 
-If a scene is skipped with `SKIP <SceneName>: no scene_background_metadata row`, add a row for it in:
-
-```
-~/ask-marvin/data/scene_background_metadata.csv
-```
-
-At minimum add: `background_id,file,lat,long` — then re-run `npm run refresh:matched-pairs`.
+Flat ingest auto-creates metadata rows. Re-run ingest after adding new matched PNGs.
 
 ### Step 3 — Review and stage the scene
 
@@ -103,7 +97,7 @@ In the review UI you can:
 
 - **Mirror** the foreground (_L ↔ _R)
 - **Bake** scale adjustments into the WebP
-- **Complete** the pair → writes to `scene_playable_pairs.csv`, rebuilds the registry, and seals the archive folders
+- **Complete** the pair → writes to `scene_playable_pairs.csv` and rebuilds the registry
 
 ### Step 4 — Commit and push
 
@@ -136,10 +130,7 @@ If the rebase pauses for a commit message, type `:wq` and press Enter (or save a
 ## Troubleshooting
 
 **New scene not appearing in review UI**
-Run `npm run refresh:matched-pairs` first. `npm run review:scenes` alone does not ingest new images.
-
-**SKIP: no scene_background_metadata row**
-Add a row to `~/ask-marvin/data/scene_background_metadata.csv` then re-run `npm run refresh:matched-pairs`.
+Run `npm run ingest:matched-pairs` then rebuild (`npm run build:scene-registry && npm run build:scene-pair-review`). `npm run review:scenes` alone does not ingest new images.
 
 **sharp module error on Apple Silicon**
 

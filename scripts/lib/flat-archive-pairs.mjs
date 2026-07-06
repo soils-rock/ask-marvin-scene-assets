@@ -55,6 +55,11 @@ export function listFlatArchivePngs(root) {
     .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
+/** Single canonical WebP name for a matched flat-archive PNG pair. */
+export function webpFileNameFromBasename(basename) {
+  return basename.replace(/\.png$/i, ".webp");
+}
+
 /** @param {string} stem */
 export function stemToBackgroundId(stem) {
   return String(stem || "")
@@ -82,7 +87,7 @@ export function processedDestinations(stem) {
 
 /**
  * @returns {{
- *   matched: Array<{ basename: string, stem: string, bgPath: string, fgPath: string }>,
+ *   matched: Array<{ basename: string, stem: string, webpFile: string, bgPath: string, fgPath: string }>,
  *   orphans: Array<{ folder: "Backgrounds_Raw"|"Foregrounds_Raw", filename: string }>
  * }}
  */
@@ -95,7 +100,7 @@ export function scanFlatArchive({
   const bgSet = new Set(bgFiles);
   const fgSet = new Set(fgFiles);
 
-  /** @type {Array<{ basename: string, stem: string, bgPath: string, fgPath: string }>} */
+  /** @type {Array<{ basename: string, stem: string, webpFile: string, bgPath: string, fgPath: string }>} */
   const matched = [];
   for (const basename of bgFiles) {
     if (!fgSet.has(basename)) continue;
@@ -103,6 +108,7 @@ export function scanFlatArchive({
     matched.push({
       basename,
       stem,
+      webpFile: webpFileNameFromBasename(basename),
       bgPath: path.join(bgArchive, basename),
       fgPath: path.join(fgArchive, basename),
     });

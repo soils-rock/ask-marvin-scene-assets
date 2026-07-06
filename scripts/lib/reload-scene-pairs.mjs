@@ -1,7 +1,6 @@
 import { execSync } from "node:child_process";
-import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { sortPairsForReview } from "./archive-pairs.mjs";
+import { sortPairsForReview } from "./sort-pairs-for-review.mjs";
 import { ASK_MARVIN_ROOT, PACKAGE_ROOT, SCENE_REGISTRY } from "./paths.mjs";
 
 export { ASK_MARVIN_ROOT as ROOT };
@@ -25,8 +24,29 @@ export function rebuildScenePairs() {
   rebuildScenePairReview();
 }
 
-export async function loadPlayablePairs() {
-  const url = `${pathToFileURL(SCENE_REGISTRY).href}?t=${Date.now()}`;
-  const mod = await import(url);
-  return sortPairsForReview(mod.SCENE_PLAYABLE_PAIRS);
+/**
+ * Load pairs from a freshly rebuilt sceneRegistry.js (subprocess avoids Node ESM import cache).
+ */
+export function loadPlayablePairs() {
+  const registryUrl = pathToFileURL(SCENE_REGISTRY).href;
+  const script = [
+    `import('${registryUrl}?t=${Date.now()}')`,
+    ".then((m) => console.log(JSON.stringify({",
+    "pairs: m.SCENE_PLAYABLE_PAIRS ?? [],",
+    "meta: m.BACKGROUND_META_BY_ID ?? {}",
+    "})))",
+    ".catch((e) => { console.error(e); process.exit(1); });",
+  ].join("");
+
+  const out = execSync(`node --input-type=module -e ${JSON.stringify(script)}`, {
+    encoding: "utf8",
+    maxBuffer: 16 * 1024 * 1024,
+  });
+
+  const { pairs, meta } = JSON.parse(out.trim());
+  return sortPairsForReview(pairs).map((pair) => ({
+    ...pair,
+    backgroundLat: meta[pair.backgroundId]?.lat ?? "",
+    backgroundLong: meta[pair.backgroundId]?.lon ?? meta[pair.backgroundId]?.long ?? "",
+  }));
 }

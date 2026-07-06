@@ -27,7 +27,6 @@ import {
   cloneForegroundForPair,
   ensureUniqueForegroundForPair,
 } from "./lib/clone-foreground.mjs";
-import { sealArchiveFolderForBackground } from "./lib/archive-pairs.mjs";
 import { commitPairRow } from "./lib/scene-playable-pairs.mjs";
 import {
   backgroundInsertDefaults,
@@ -113,7 +112,7 @@ function readJsonBody(req) {
 }
 
 async function respondWithPairs(res, extra = {}) {
-  const pairs = await loadPlayablePairs();
+  const pairs = loadPlayablePairs();
   sendJson(res, 200, { ok: true, pairs, ...extra });
 }
 
@@ -254,7 +253,7 @@ async function handleCompletePair(req, res) {
       ? path.basename(String(body.previousForegroundFile))
       : undefined;
 
-    const pairs = await loadPlayablePairs();
+    const pairs = loadPlayablePairs();
     const cloneResult = await ensureUniqueForegroundForPair({
       foregroundFile,
       backgroundId,
@@ -300,8 +299,6 @@ async function handleCompletePair(req, res) {
 
     rebuildScenePairs();
 
-    const seal = sealArchiveFolderForBackground(backgroundId);
-
     await respondWithPairs(res, {
       row,
       committed: true,
@@ -312,9 +309,6 @@ async function handleCompletePair(req, res) {
       backgroundLong: coordResult.patch?.long ?? existingBackground?.long,
       backgroundMetaUpdated: Boolean(coordResult.patch),
       backgroundMetaCreated: Boolean(backgroundMetaResult?.created),
-      archiveSealed: seal.sealed,
-      archiveFolder: seal.folder,
-      archiveSealNote: seal.reason,
     });
   } catch (err) {
     sendJson(res, 500, {
@@ -327,13 +321,18 @@ async function handleCompletePair(req, res) {
 function sendFile(res, filePath) {
   const ext = path.extname(filePath).toLowerCase();
   const type = MIME[ext] ?? "application/octet-stream";
+  const headers = { "Content-Type": type };
+  // Review page is rebuilt often — avoid stale cached HTML/JS after npm run build:scene-pair-review.
+  if (filePath.startsWith(REVIEW_DIST + path.sep) || filePath === REVIEW_HTML) {
+    headers["Cache-Control"] = "no-store";
+  }
   fs.readFile(filePath, (err, data) => {
     if (err) {
       res.writeHead(err.code === "ENOENT" ? 404 : 500);
       res.end(err.code === "ENOENT" ? "Not found" : "Server error");
       return;
     }
-    res.writeHead(200, { "Content-Type": type });
+    res.writeHead(200, headers);
     res.end(data);
   });
 }

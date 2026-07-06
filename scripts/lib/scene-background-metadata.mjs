@@ -1,6 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 import { ASK_MARVIN_ROOT } from "./paths.mjs";
+import {
+  coordinatesAreValid,
+  parseCoordinate,
+  validateCoordinateFields,
+} from "./parse-coordinate.mjs";
+
+export { coordinatesAreValid, parseCoordinate, validateCoordinateFields };
 
 export function bgCsvPath() {
   return (
@@ -93,40 +100,6 @@ export function writeBackgroundRows({ header, rows }) {
 export function findBackgroundRow(rows, backgroundId) {
   const id = String(backgroundId || "").trim();
   return rows.find((row) => row.background_id === id);
-}
-
-/**
- * @param {string} value
- * @param {"lat"|"long"} axis
- */
-export function parseCoordinate(value, axis) {
-  const s = String(value ?? "").trim();
-  if (!s) {
-    return { ok: false, error: `${axis} is required.` };
-  }
-  const n = Number(s);
-  if (!Number.isFinite(n)) {
-    return { ok: false, error: `${axis} must be a finite decimal number.` };
-  }
-  if (axis === "lat" && (n < -90 || n > 90)) {
-    return { ok: false, error: "lat must be between -90 and 90." };
-  }
-  if (axis === "long" && (n < -180 || n > 180)) {
-    return { ok: false, error: "long must be between -180 and 180." };
-  }
-  return { ok: true, value: s };
-}
-
-export function coordinatesAreValid(lat, long) {
-  return parseCoordinate(lat, "lat").ok && parseCoordinate(long, "long").ok;
-}
-
-export function validateCoordinateFields(lat, long) {
-  const latResult = parseCoordinate(lat, "lat");
-  if (!latResult.ok) return { ok: false, error: latResult.error };
-  const longResult = parseCoordinate(long, "long");
-  if (!longResult.ok) return { ok: false, error: longResult.error };
-  return { ok: true, lat: latResult.value, long: longResult.value };
 }
 
 /**

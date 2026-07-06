@@ -1,34 +1,16 @@
 #!/usr/bin/env node
 /**
  * Keep only scene WebPs (and stray PNGs) referenced by scene_playable_pairs.csv
- * plus background WebPs for each paired background_id (from scene_background_metadata).
+ * plus metadata CSV rows and pending flat archive pairs.
  */
 import fs from "node:fs";
 import path from "node:path";
-import {
-  archiveFolderForBackgroundId,
-  backgroundIdForArchiveFolder,
-  matchedActiveArchiveFolders,
-} from "./lib/archive-pairs.mjs";
+import { scanFlatArchive } from "./lib/flat-archive-pairs.mjs";
 import { BG_DIR, FG_DIR, ASK_MARVIN_ROOT } from "./lib/paths.mjs";
 import { readPairRows } from "./lib/scene-playable-pairs.mjs";
 
 const BG_CSV = path.join(ASK_MARVIN_ROOT, "data/scene_background_metadata.csv");
-const BG_ARCHIVE = path.join(
-  process.env.SCENE_PNG_ARCHIVE || "/Volumes/Marvin/CyanoVerse_Source_Files",
-  "Backgrounds_Raw"
-);
-const FG_ARCHIVE = path.join(
-  process.env.SCENE_PNG_ARCHIVE || "/Volumes/Marvin/CyanoVerse_Source_Files",
-  "Foregrounds_Raw"
-);
-
-function listArchivePngs(dir) {
-  if (!fs.existsSync(dir)) return [];
-  return fs
-    .readdirSync(dir)
-    .filter((n) => n.toLowerCase().endsWith(".png"));
-}
+const FG_CSV = path.join(ASK_MARVIN_ROOT, "data/scene_foreground_metadata.csv");
 
 function parseCsv(text) {
   const rows = [];
@@ -74,18 +56,17 @@ function parseCsv(text) {
   return rows;
 }
 
-function loadBackgroundFiles() {
-  const parsed = parseCsv(fs.readFileSync(BG_CSV, "utf8"));
+function loadMetadataFiles(csvPath) {
+  if (!fs.existsSync(csvPath)) return [];
+  const parsed = parseCsv(fs.readFileSync(csvPath, "utf8"));
   const [header, ...data] = parsed;
-  const byId = new Map();
-  for (const cells of data) {
+  return data.map((cells) => {
     const row = {};
     header.forEach((key, i) => {
       row[key.trim()] = (cells[i] ?? "").trim();
     });
-    if (row.background_id) byId.set(row.background_id, row);
-  }
-  return byId;
+    return row;
+  });
 }
 
 function collectAllowed() {
@@ -93,36 +74,35 @@ function collectAllowed() {
   const allowedFg = new Set(
     pairs.map((r) => r.foreground_file).filter(Boolean)
   );
-  const bgMeta = loadBackgroundFiles();
+  const bgMetaRows = loadMetadataFiles(BG_CSV);
+  const fgMetaRows = loadMetadataFiles(FG_CSV);
   const allowedBg = new Set();
 
+  for (const row of bgMetaRows) {
+    if (row.file) allowedBg.add(row.file);
+  }
+  for (const row of fgMetaRows) {
+    if (row.file) allowedFg.add(row.file);
+  }
+
   for (const id of new Set(pairs.map((r) => r.background_id).filter(Boolean))) {
-    const meta = bgMeta.get(id);
+    const meta = bgMetaRows.find((r) => r.background_id === id);
     if (meta?.file) {
       allowedBg.add(meta.file);
-    } else {
-      const folder = archiveFolderForBackgroundId(id);
-      allowedBg.add(`${folder}.webp`);
     }
   }
 
-  for (const folder of matchedActiveArchiveFolders()) {
-    for (const png of listArchivePngs(path.join(BG_ARCHIVE, folder))) {
-      allowedBg.add(png.replace(/\.png$/i, ".webp"));
-    }
-    for (const png of listArchivePngs(path.join(FG_ARCHIVE, folder))) {
-      allowedFg.add(png.replace(/\.png$/i, ".webp"));
-    }
-    const bgId = backgroundIdForArchiveFolder(folder);
-    const meta = bgMeta.get(bgId);
-    if (meta?.file) allowedBg.add(meta.file);
+  const { matched } = scanFlatArchive();
+  for (const { webpFile } of matched) {
+    allowedBg.add(webpFile);
+    allowedFg.add(webpFile);
   }
 
   return {
     allowedFg,
     allowedBg,
     pairCount: pairs.length,
-    activeFolders: matchedActiveArchiveFolders().length,
+    pendingFlatPairs: matched.length,
   };
 }
 
@@ -143,10 +123,10 @@ function pruneDir(dir, allowed, label) {
 }
 
 function main() {
-  const { allowedFg, allowedBg, pairCount, activeFolders } = collectAllowed();
+  const { allowedFg, allowedBg, pairCount, pendingFlatPairs } = collectAllowed();
 
   console.log(
-    `Pruning ask-marvin scene images (${pairCount} paired rows, ${activeFolders} active archive folder(s), keeping ${allowedBg.size} BG + ${allowedFg.size} FG webp names)…\n`
+    `Pruning ask-marvin scene images (${pairCount} paired rows, ${pendingFlatPairs} pending flat pair(s), keeping ${allowedBg.size} BG + ${allowedFg.size} FG webp names)…\n`
   );
 
   const bg = pruneDir(BG_DIR, allowedBg, "background");

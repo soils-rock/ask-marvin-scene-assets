@@ -6,9 +6,7 @@
   "description": "Scene image authoring and scene-pair review for ask-marvin",
   "scripts": {
     "ingest:matched-pairs": "node scripts/ingest-matched-archive-pairs.mjs",
-    "seal:paired-archives": "node scripts/seal-paired-archive-folders.mjs",
     "prune:scene-webps": "node scripts/prune-unpaired-scene-webps.mjs",
-    "refresh:matched-pairs": "npm run ingest:matched-pairs && npm run apply:scene-png-edits && npm run prune:scene-webps && npm run build:scene-registry && npm run build:scene-pair-review",
     "apply:scene-png-edits": "node scripts/apply-scene-png-edits.mjs",
     "convert:scene-png": "node scripts/apply-scene-png-edits.mjs",
     "validate:assets": "node scripts/validate-scene-assets.mjs",

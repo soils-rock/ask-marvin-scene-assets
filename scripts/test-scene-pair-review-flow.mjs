@@ -337,10 +337,23 @@ function testBuiltReviewHtml() {
 function testBackgroundCoordinateValidation() {
   assert(parseCoordinate("34.5", "lat").ok, "valid lat");
   assert(parseCoordinate("-113.09", "long").ok, "valid long");
+  const atacamaLat = parseCoordinate(`23°44'51.57"S`, "lat");
+  assert(atacamaLat.ok, "DMS latitude accepted");
+  assert(
+    Math.abs(Number(atacamaLat.value) - -23.747658333333333) < 1e-6,
+    "DMS latitude converts to decimal"
+  );
+  assert(!parseCoordinate(`23°44'51.57"E`, "lat").ok, "wrong DMS direction for lat");
   assert(!parseCoordinate("", "lat").ok, "empty lat rejected");
   assert(!parseCoordinate("abc", "long").ok, "non-numeric long rejected");
   assert(!parseCoordinate("91", "lat").ok, "lat > 90 rejected");
   assert(!parseCoordinate("-181", "long").ok, "long < -180 rejected");
+  const curlyLong = parseCoordinate(`67°47'37.46\u201dW`, "long");
+  assert(curlyLong.ok, "DMS longitude with curly quote accepted");
+  assert(
+    Math.abs(Number(curlyLong.value) - -67.79373889) < 1e-6,
+    "curly-quote DMS longitude converts to decimal"
+  );
   assert(coordinatesAreValid("34.5", "-113"), "coordinatesAreValid true");
   assert(!coordinatesAreValid("", "-113"), "coordinatesAreValid false when lat missing");
 

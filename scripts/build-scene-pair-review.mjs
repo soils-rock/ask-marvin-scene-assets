@@ -7,11 +7,7 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  isActiveArchiveBackground,
-  isArchiveSealedForBackground,
-  sortPairsForReview,
-} from "./lib/archive-pairs.mjs";
+import { sortPairsForReview } from "./lib/sort-pairs-for-review.mjs";
 import {
   ASK_MARVIN_ROOT,
   PACKAGE_ROOT,
@@ -93,6 +89,21 @@ ${css}
       localStorage. Flip mirrors the staged WebP to the opposite-side filename. Arrows: prev/next · G: grid.
     </p>
   </main>
+  <div
+    id="coords-warning-modal"
+    class="scene-pair-review__modal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="coords-warning-title"
+  >
+    <div class="scene-pair-review__modal-backdrop" id="coords-warning-backdrop"></div>
+    <div class="scene-pair-review__modal-panel">
+      <h2 id="coords-warning-title">Background coordinates missing</h2>
+      <p class="scene-pair-review__modal-hint" id="coords-warning-message"></p>
+      <div class="scene-pair-review__modal-actions" id="coords-warning-actions"></div>
+    </div>
+  </div>
   <script>
 ${inlined}
   </script>
@@ -109,21 +120,13 @@ async function main() {
     return {
       ...pair,
       backgroundLat: meta?.lat ?? "",
-      backgroundLong: meta?.lon ?? "",
+      backgroundLong: meta?.lon ?? meta?.long ?? "",
     };
   });
-  const activeArchive = pairs.filter((p) =>
-    isActiveArchiveBackground(p.backgroundId)
-  ).length;
-  const sealedCount = pairs.filter((p) =>
-    isArchiveSealedForBackground(p.backgroundId)
-  ).length;
   const css = fs.readFileSync(CSS_SRC, "utf8");
   fs.mkdirSync(REVIEW_DIST, { recursive: true });
   fs.writeFileSync(REVIEW_HTML, buildHtml(pairs, css));
-  console.log(
-    `Wrote ${REVIEW_HTML} (${pairs.length} pairs, ${activeArchive} active-archive first, ${sealedCount} sealed)`
-  );
+  console.log(`Wrote ${REVIEW_HTML} (${pairs.length} pairs)`);
 }
 
 main().catch((err) => {
