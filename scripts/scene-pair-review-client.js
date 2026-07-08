@@ -7,6 +7,7 @@
   const CANVAS_H = 1080;
   const STAGING_KEY = "ask-marvin-scene-pair-staging";
   const BG_COORDS_STAGING_KEY = "ask-marvin-scene-background-coords-staging";
+  const SORT_STORAGE_KEY = "ask-marvin-scene-pair-sort";
   const PAIRS = __PAIRS_JSON__;
   const DEFAULT_FG_ADJUST = { scaleX: 100, scaleY: 100 };
   const SCALE_PERCENT_MIN = 1;
@@ -40,6 +41,63 @@
   function isDefaultFgAdjust(adjust) {
     var a = normalizeFgAdjust(adjust);
     return a.scaleX === 100 && a.scaleY === 100;
+  }
+
+  function readSortMode() {
+    try {
+      var mode = localStorage.getItem(SORT_STORAGE_KEY);
+      return mode === "alpha" ? "alpha" : "ingest";
+    } catch (err) {
+      return "ingest";
+    }
+  }
+
+  function writeSortMode(mode) {
+    try {
+      localStorage.setItem(SORT_STORAGE_KEY, mode === "alpha" ? "alpha" : "ingest");
+    } catch (err) {
+      // ignore quota / private mode
+    }
+  }
+
+  function comparePairsAlphabetical(a, b) {
+    var bg = (a.backgroundId || "").localeCompare(b.backgroundId || "", undefined, {
+      sensitivity: "base",
+    });
+    if (bg !== 0) return bg;
+    return (a.foregroundFile || "").localeCompare(b.foregroundFile || "", undefined, {
+      sensitivity: "base",
+    });
+  }
+
+  function comparePairsIngestDate(a, b) {
+    var ta = a.backgroundIngestMs;
+    var tb = b.backgroundIngestMs;
+    var aMissing = ta == null || !Number.isFinite(ta);
+    var bMissing = tb == null || !Number.isFinite(tb);
+    if (aMissing && bMissing) return comparePairsAlphabetical(a, b);
+    if (aMissing) return 1;
+    if (bMissing) return -1;
+    if (tb !== ta) return tb - ta;
+    return comparePairsAlphabetical(a, b);
+  }
+
+  function sortPairsInPlace(mode) {
+    if (mode === "alpha") {
+      PAIRS.sort(comparePairsAlphabetical);
+      return;
+    }
+    PAIRS.sort(comparePairsIngestDate);
+  }
+
+  function applySortMode(mode, options) {
+    var opts = options || {};
+    var previous = PAIRS.length ? PAIRS[index] : null;
+    sortPairsInPlace(mode);
+    if (opts.preserveSelection !== false && previous) {
+      focusCurrentPairAfterUpdate(previous.backgroundId, previous.foregroundFile);
+    }
+    writeSortMode(mode);
   }
 
   function committedPairState(pair) {
@@ -698,6 +756,7 @@
   const elPreviewFrame = document.getElementById("preview-frame");
   const elHint = document.getElementById("hint");
   const elBtnMode = document.getElementById("btn-mode");
+  const elPairSort = document.getElementById("pair-sort");
   const elMetaNote = document.getElementById("meta-note");
   const elCopyHelper = document.getElementById("copy-helper");
   const elToast = document.getElementById("toast");
@@ -730,6 +789,7 @@
 
   function applyPairsUpdate(data) {
     if (!Array.isArray(data.pairs)) return;
+    var current = PAIRS.length ? PAIRS[index] : null;
     PAIRS.length = 0;
     data.pairs.forEach(function (p) {
       PAIRS.push(p);
@@ -740,6 +800,10 @@
         };
       }
     });
+    applySortMode(readSortMode(), { preserveSelection: false });
+    if (current) {
+      focusCurrentPairAfterUpdate(current.backgroundId, current.foregroundFile);
+    }
   }
 
   function focusCurrentPairAfterUpdate(backgroundId, foregroundFile) {
@@ -1499,8 +1563,18 @@
     render();
   });
 
+  if (elPairSort) {
+    elPairSort.value = readSortMode();
+    elPairSort.addEventListener("change", function () {
+      applySortMode(elPairSort.value === "alpha" ? "alpha" : "ingest");
+      render();
+    });
+  }
+
+  applySortMode(readSortMode());
+
   window.addEventListener("keydown", function (e) {
-    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT") return;
     if (e.key === "ArrowLeft") go(-1);
     if (e.key === "ArrowRight") go(1);
     if (e.key === "g" || e.key === "G") {

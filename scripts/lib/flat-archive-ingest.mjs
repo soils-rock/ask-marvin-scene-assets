@@ -12,6 +12,7 @@ import {
   stemToPlaceName,
 } from "./flat-archive-pairs.mjs";
 import { convertArchivePngToWebp, loadSharp } from "./scene-png-to-webp.mjs";
+import { foregroundWebpFileName } from "./foreground-side-suffix.mjs";
 
 function askMarvinRoot() {
   return process.env.ASK_MARVIN_ROOT || ASK_MARVIN_ROOT;
@@ -232,8 +233,10 @@ export async function ingestMatchedPairs(matched) {
 
   for (const pair of matched) {
     const { basename, stem, webpFile, bgPath, fgPath } = pair;
+    const marvinSide = inferMarvinSide(basename);
+    const fgWebpFile = foregroundWebpFileName(stem, marvinSide);
     const destWebpBg = path.join(bgDir, webpFile);
-    const destWebpFg = path.join(fgDir, webpFile);
+    const destWebpFg = path.join(fgDir, fgWebpFile);
     const { bg: destProcessedBg, fg: destProcessedFg } = processedDestinations(stem);
     const backgroundId = stemToBackgroundId(stem);
 
@@ -263,7 +266,7 @@ export async function ingestMatchedPairs(matched) {
         sharp,
       });
       log.push(
-        `  FG ${basename} → ${webpFile} q=${fgConvert.quality} (${fgConvert.sizeKb} KB)`
+        `  FG ${basename} → ${fgWebpFile} q=${fgConvert.quality} (${fgConvert.sizeKb} KB)`
       );
     } catch (err) {
       if (fs.existsSync(destWebpBg)) fs.unlinkSync(destWebpBg);
@@ -286,7 +289,7 @@ export async function ingestMatchedPairs(matched) {
         header: fgHeader,
         fgIds,
         backgroundId,
-        webpFile,
+        webpFile: fgWebpFile,
         basename,
       });
       writeMetadataCsv(bgCsv, bgHeader, bgRows);

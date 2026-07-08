@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
-import { sortPairsForReview } from "./sort-pairs-for-review.mjs";
+import { enrichPairForReview, sortPairsForReview } from "./sort-pairs-for-review.mjs";
 import { ASK_MARVIN_ROOT, PACKAGE_ROOT, SCENE_REGISTRY } from "./paths.mjs";
 
 export { ASK_MARVIN_ROOT as ROOT };
@@ -44,9 +44,11 @@ export function loadPlayablePairs() {
   });
 
   const { pairs, meta } = JSON.parse(out.trim());
-  return sortPairsForReview(pairs).map((pair) => ({
-    ...pair,
-    backgroundLat: meta[pair.backgroundId]?.lat ?? "",
-    backgroundLong: meta[pair.backgroundId]?.lon ?? meta[pair.backgroundId]?.long ?? "",
-  }));
+  return sortPairsForReview(pairs).map((pair) =>
+    enrichPairForReview({
+      ...pair,
+      backgroundLat: meta[pair.backgroundId]?.lat ?? "",
+      backgroundLong: meta[pair.backgroundId]?.lon ?? meta[pair.backgroundId]?.long ?? "",
+    })
+  );
 }

@@ -7,7 +7,7 @@ import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { sortPairsForReview } from "./lib/sort-pairs-for-review.mjs";
+import { enrichPairForReview, sortPairsForReview } from "./lib/sort-pairs-for-review.mjs";
 import {
   ASK_MARVIN_ROOT,
   PACKAGE_ROOT,
@@ -57,6 +57,11 @@ ${css}
       <button type="button" id="btn-prev">← Prev</button>
       <button type="button" id="btn-next">Next →</button>
       <button type="button" id="btn-mode">Grid view (G)</button>
+      <label class="scene-pair-review__sort" for="pair-sort">Sort</label>
+      <select id="pair-sort" aria-label="Sort scene pairs">
+        <option value="ingest">Ingest date</option>
+        <option value="alpha">Alphabetical</option>
+      </select>
     </div>
     <p class="scene-pair-review__meta" id="meta"></p>
     <p class="scene-pair-review__meta-note" id="meta-note" hidden></p>
@@ -117,11 +122,11 @@ async function main() {
   const { SCENE_PLAYABLE_PAIRS, BACKGROUND_META_BY_ID } = await import(SCENE_REGISTRY);
   const pairs = sortPairsForReview(SCENE_PLAYABLE_PAIRS).map((pair) => {
     const meta = BACKGROUND_META_BY_ID[pair.backgroundId];
-    return {
+    return enrichPairForReview({
       ...pair,
       backgroundLat: meta?.lat ?? "",
       backgroundLong: meta?.lon ?? meta?.long ?? "",
-    };
+    });
   });
   const css = fs.readFileSync(CSS_SRC, "utf8");
   fs.mkdirSync(REVIEW_DIST, { recursive: true });

@@ -39,9 +39,12 @@ import {
   loadPlayablePairs,
   rebuildScenePairs,
 } from "./lib/reload-scene-pairs.mjs";
+import { ensureForegroundSideSuffix } from "./lib/foreground-side-suffix.mjs";
 import {
   PUBLIC_DIR,
   REVIEW_DIST,
+  REVIEW_HTML,
+  FG_DIR,
 } from "./lib/paths.mjs";
 
 const PORT = Number(process.env.SCENE_REVIEW_PORT) || 5174;
@@ -253,9 +256,16 @@ async function handleCompletePair(req, res) {
       ? path.basename(String(body.previousForegroundFile))
       : undefined;
 
+    const sideSuffixResult = ensureForegroundSideSuffix({
+      foregroundFile,
+      marvinSide: marvinSide || undefined,
+      fgDir: FG_DIR,
+    });
+    const foregroundWithSide = sideSuffixResult.to;
+
     const pairs = loadPlayablePairs();
     const cloneResult = await ensureUniqueForegroundForPair({
-      foregroundFile,
+      foregroundFile: foregroundWithSide,
       backgroundId,
       pairs,
     });
@@ -294,7 +304,9 @@ async function handleCompletePair(req, res) {
       foregroundFile: committedForegroundFile,
       marvinSide: marvinSide || undefined,
       notes: body.notes !== undefined ? String(body.notes) : undefined,
-      previousForegroundFile,
+      previousForegroundFile:
+        previousForegroundFile ||
+        (sideSuffixResult.renamed ? sideSuffixResult.from : undefined),
     });
 
     rebuildScenePairs();
@@ -303,6 +315,8 @@ async function handleCompletePair(req, res) {
       row,
       committed: true,
       foregroundFile: committedForegroundFile,
+      sideSuffixRenamed: Boolean(sideSuffixResult.renamed),
+      sideSuffixFrom: sideSuffixResult.renamed ? sideSuffixResult.from : undefined,
       cloned: Boolean(cloneResult.cloned),
       cloneFrom: cloneResult.cloned ? cloneResult.from : undefined,
       backgroundLat: coordResult.patch?.lat ?? existingBackground?.lat,

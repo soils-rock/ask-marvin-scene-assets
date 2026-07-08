@@ -105,6 +105,10 @@ async function testStemToBackgroundId() {
   assert(dest.fg.endsWith("Atacama-1__fg.png"), "processed fg name");
   assert(inferMarvinSide("Foo_L.png") === "left", "marvin left");
   assert(inferMarvinSide("Foo_R.png") === "right", "marvin right");
+  const { foregroundWebpFileName } = await import("./lib/foreground-side-suffix.mjs");
+  assert(foregroundWebpFileName("Peru-1", "right") === "Peru-1_R.webp", "suffix for marvin right");
+  assert(foregroundWebpFileName("Utting", "left") === "Utting_L.webp", "suffix for marvin left");
+  assert(foregroundWebpFileName("Valley_of_Fires_R") === "Valley_of_Fires_R.webp", "keep existing suffix");
   console.log("stem-and-processed-names: ok");
 }
 
@@ -163,12 +167,13 @@ async function testIngestWebpFileMatchesDiskAndCsv() {
     const bgDisk = fs.readdirSync(path.join(env.ask, "public/images/background"));
     const fgDisk = fs.readdirSync(path.join(env.ask, "public/images/foreground"));
     assert(bgDisk.includes("Atacama-1.webp"), "bg webp on disk");
-    assert(fgDisk.includes("Atacama-1.webp"), "fg webp on disk");
+    assert(fgDisk.includes("Atacama-1_R.webp"), "fg webp on disk with side suffix");
+    assert(!fgDisk.includes("Atacama-1.webp") || bgDisk.includes("Atacama-1.webp"), "bg keeps unsuffixed name");
 
     const bgCsv = fs.readFileSync(path.join(env.ask, "data/scene_background_metadata.csv"), "utf8");
     const fgCsv = fs.readFileSync(path.join(env.ask, "data/scene_foreground_metadata.csv"), "utf8");
     assert(bgCsv.includes("Atacama-1.webp"), "bg csv file field");
-    assert(fgCsv.includes("Atacama-1.webp"), "fg csv file field");
+    assert(fgCsv.includes("Atacama-1_R.webp"), "fg csv file field with side suffix");
     console.log("ingest-webp-file-matches-disk-and-csv: ok");
   } finally {
     restore();

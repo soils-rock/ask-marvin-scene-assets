@@ -318,6 +318,10 @@ function testBuiltReviewHtml() {
     "Built HTML missing Give unique foreground copy button (rebuild scene-pair-review)"
   );
   assert(
+    html.includes('id="pair-sort"'),
+    "Built HTML missing pair sort select (rebuild scene-pair-review)"
+  );
+  assert(
     !html.includes('id="btn-flip"'),
     "Built HTML still has single btn-flip (rebuild scene-pair-review)"
   );

@@ -39,6 +39,21 @@ body.scene-pair-review {
   cursor: pointer;
 }
 
+.scene-pair-review__sort {
+  font-size: 0.875rem;
+  color: #ccc;
+}
+
+.scene-pair-review__controls select {
+  font-size: 0.875rem;
+  padding: 0.35rem 0.5rem;
+  background: #333;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
 .scene-pair-review__meta {
   font-size: 0.8rem;
   color: #aaa;

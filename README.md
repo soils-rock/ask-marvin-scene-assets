@@ -104,7 +104,7 @@ npm run ingest:matched-pairs
 - Scans flat `Backgrounds_Raw` + `Foregrounds_Raw` for **same-basename** PNG pairs.
 - If any PNG has no twin, opens a **browser orphan dialog** (port **5176**, `INGEST_ORPHAN_PORT`) listing unmatched files; click OK to proceed with matched pairs only.
 - For each matched pair:
-  - Converts PNG → WebP in `~/ask-marvin/public/images/background/` and `.../foreground/`
+  - Converts PNG → WebP in `~/ask-marvin/public/images/background/` (same basename) and `.../foreground/` (**adds `_L`/`_R`** from `marvin_side`; default **right** → `_R`)
   - Upserts provisional rows in `scene_background_metadata.csv` (`status=ready`) and `scene_foreground_metadata.csv` (`status=draft`; empty lat/long OK)
   - On success, moves raw PNGs to `Processed_images/` as `{stem}__bg.png` and `{stem}__fg.png` (skipped on re-ingest if those already exist)
 
@@ -135,10 +135,10 @@ kill $(lsof -ti:5174)
 npm run review:scenes
 ```
 
-- Pair list is sorted **newest background WebP first** (file birthtime in `public/images/background/`).
+- Pair list defaults to **newest background WebP first** (ingest date); use the **Sort** menu (right of Grid view) for **Ingest date** or **Alphabetical**. Preference is saved in browser localStorage.
 - Adjust Marvin side, mirror/clone/bake foreground as needed.
 - **Coordinates:** decimal degrees; enter **both** latitude and longitude, or leave **both** empty. Complete writes coords to `scene_background_metadata.csv` when both are valid.
-- **Complete** commits the pair to `scene_playable_pairs.csv` and rebuilds registry + review HTML.
+- **Complete** commits the pair to `scene_playable_pairs.csv` and rebuilds registry + review HTML. If the foreground WebP lacks `_L`/`_R`, Complete renames it first (same rule as ingest).
 
 Scenes already in the playable-pairs table show as committed; new ingest rows show as metadata-only until Completed.
 
@@ -170,6 +170,7 @@ The review server sends `Cache-Control: no-store` for the built review page, but
 | `bake:foreground:arm64` | same under `arch -arm64` |
 | `test:scene-pair-review` | Integration tests (review server on test port) |
 | `test:flat-archive-ingest` | Flat ingest unit tests |
+| `audit:foreground-side-suffix` | Rename existing foreground WebPs missing `_L`/`_R` and patch CSVs |
 
 ---
 

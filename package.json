@@ -21,6 +21,7 @@
     "review:scenes:arm64": "arch -arm64 npm run review:scenes",
     "test:scene-pair-review": "node scripts/test-scene-pair-review-flow.mjs",
     "test:flat-archive-ingest": "node scripts/test-flat-archive-ingest.mjs",
+    "audit:foreground-side-suffix": "node scripts/audit-foreground-side-suffix.mjs",
     "intake:images": "node scripts/serve-image-intake.mjs",
     "reinstall:sharp": "npm install --include=optional sharp && npm rebuild sharp"
   },
