@@ -9,9 +9,9 @@ Workflow
 
 Finished scene WebPs, metadata CSVs, and the playable-pairs table live in the **ask-marvin** consumer repo, not here.
 
-- **Consumer repo:** [ask-marvin](https://github.com/bcottraven/ask-marvin) (local clone at `~/ask-marvin`)
-- **Playable pairs CSV:** `~/ask-marvin/data/scene_playable_pairs.csv`
-- **Metadata CSVs:** `~/ask-marvin/data/scene_background_metadata.csv`, `scene_foreground_metadata.csv`
+- **Consumer repo:** [ask-marvin](https://github.com/bcottraven/ask-marvin) (local clone at `~/CyanoVerse/ask-marvin`)
+- **Playable pairs CSV:** `~/CyanoVerse/ask-marvin/data/scene_playable_pairs.csv`
+- **Metadata CSVs:** `~/CyanoVerse/ask-marvin/data/scene_background_metadata.csv`, `scene_foreground_metadata.csv`
 
 ---
 
@@ -20,7 +20,7 @@ Finished scene WebPs, metadata CSVs, and the playable-pairs table live in the **
 Two git repos, expected as siblings:
 
 ```
-~/ask-marvin                              ← consumer app (WebPs, CSVs, registry)
+~/CyanoVerse/ask-marvin                              ← consumer app (WebPs, CSVs, registry)
 ~/CyanoVerse/ask-marvin-scene-assets      ← this repo (authoring tools)
 ```
 
@@ -104,7 +104,7 @@ npm run ingest:matched-pairs
 - Scans flat `Backgrounds_Raw` + `Foregrounds_Raw` for **same-basename** PNG pairs.
 - If any PNG has no twin, opens a **browser orphan dialog** (port **5176**, `INGEST_ORPHAN_PORT`) listing unmatched files; click OK to proceed with matched pairs only.
 - For each matched pair:
-  - Converts PNG → WebP in `~/ask-marvin/public/images/background/` (same basename) and `.../foreground/` (**adds `_L`/`_R`** from `marvin_side`; default **right** → `_R`)
+  - Converts PNG → WebP in `~/CyanoVerse/ask-marvin/public/images/background/` (same basename) and `.../foreground/` (**adds `_L`/`_R`** from `marvin_side`; default **right** → `_R`)
   - Upserts provisional rows in `scene_background_metadata.csv` (`status=ready`) and `scene_foreground_metadata.csv` (`status=draft`; empty lat/long OK)
   - On success, moves raw PNGs to `Processed_images/` as `{stem}__bg.png` and `{stem}__fg.png` (skipped on re-ingest if those already exist)
 
@@ -117,7 +117,7 @@ npm run build:scene-registry
 npm run build:scene-pair-review
 ```
 
-- `build:scene-registry` — runs `~/ask-marvin/scripts/build-scene-registry.mjs` (pairs metadata + playable CSV → `src/generated/sceneRegistry.js`).
+- `build:scene-registry` — runs `~/CyanoVerse/ask-marvin/scripts/build-scene-registry.mjs` (pairs metadata + playable CSV → `src/generated/sceneRegistry.js`).
 - `build:scene-pair-review` — bakes the pair list into `dist/scene-pair-review/index.html`.
 
 New ingested scenes appear as **metadata-only** candidates (`pairSource: metadata`) until Completed in review.
@@ -189,4 +189,4 @@ Run `ingest:matched-pairs`, then rebuild (`build:scene-registry` + `build:scene-
 `Processed_images/{stem}__bg.png` or `__fg.png` already exists from a prior ingest.
 
 **Git**
-Use session end scripts for routine commit/push across repos. Manual: commit in `~/ask-marvin` for WebP/CSV changes; commit in `~/CyanoVerse/ask-marvin-scene-assets` for tool changes; update CyanoVerse submodule pointer if needed.
+Use session end scripts for routine commit/push across repos. Manual: commit in `~/CyanoVerse/ask-marvin` for WebP/CSV changes; commit in `~/CyanoVerse/ask-marvin-scene-assets` for tool changes; update CyanoVerse submodule pointer if needed.

@@ -1,8 +1,8 @@
 /**
  * Paths for ask-marvin (consumer) vs ask-marvin-scene-assets (authoring tools).
  *
- * Defaults assume sibling repos:
- *   ~/ask-marvin
+ * Defaults assume:
+ *   ~/CyanoVerse/ask-marvin
  *   ~/CyanoVerse/ask-marvin-scene-assets
  *
  * Override:
@@ -19,7 +19,7 @@ export const PACKAGE_ROOT = path.resolve(__dirname, "../..");
 
 /** ask-marvin dev app (scene WebPs + pairing CSV target) */
 export const ASK_MARVIN_ROOT =
-  process.env.ASK_MARVIN_ROOT || path.resolve(PACKAGE_ROOT, "../../ask-marvin");
+  process.env.ASK_MARVIN_ROOT || path.resolve(PACKAGE_ROOT, "../ask-marvin");
 
 /** Playable pairs output (written by scene pair review Complete) */
 export const PAIRS_CSV =

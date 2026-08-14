@@ -31,7 +31,7 @@ const file = readPathsFile();
 
 export const ASK_MARVIN_ROOT = resolveMaybeRelative(
   PACKAGE_ROOT,
-  process.env.ASK_MARVIN_ROOT || file.askMarvinRoot || "../../../ask-marvin"
+  process.env.ASK_MARVIN_ROOT || file.askMarvinRoot || "../../ask-marvin"
 );
 
 export const DATA_DIR = resolveMaybeRelative(PACKAGE_ROOT, file.dataDir ?? "data");
