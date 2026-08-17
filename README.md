@@ -151,11 +151,10 @@ Scenes already in the playable-pairs table show as committed; new ingest rows sh
 
 ```bash
 cd ~/CyanoVerse/ask-marvin
-node scripts/backfill-scene-locations.mjs           # dry run, prints the change table
-node scripts/backfill-scene-locations.mjs --write   # applies it
+node scripts/backfill-scene-locations.mjs --write
 ```
 
-Reads the coordinates on each background row and fills `region`, `state_or_country` and `elevation_m` where they are empty, by reverse geocode and elevation lookup. It never overwrites a cell that already has a value, and it never invents one: a lookup that fails leaves the cell empty and lists the row.
+Reads the coordinates on each background row and fills `region`, `state_or_country` and `elevation_m` where they are empty, by reverse geocode and elevation lookup. It never overwrites a cell that already has a value, and it never invents one: a lookup that fails leaves the cell empty and lists the row. Running the same command without `--write` prints the change table and writes nothing.
 
 Everything else on the scene — `foreground_subject`, `organisms_present`, `soil_crust_type`, `what_we_see` — is still written by hand in `~/CyanoVerse/ask-marvin/data/scene_foreground_metadata.csv`. Ingest creates that row as `status=draft` with those cells empty, and nothing fills them automatically.
 
