@@ -76,6 +76,28 @@
           autocomplete="off"
         />
       </label>
+      <div id="save-modal-coords-wrap" class="image-intake__modal-coords" hidden>
+        <label>
+          <span>Latitude</span>
+          <input
+            type="text"
+            id="save-modal-lat"
+            placeholder="34.27017 or 34°16'12.6&quot;N"
+            spellcheck="false"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          <span>Longitude</span>
+          <input
+            type="text"
+            id="save-modal-long"
+            placeholder="-113.092278 or 113°5'32.2&quot;W"
+            spellcheck="false"
+            autocomplete="off"
+          />
+        </label>
+      </div>
       <div id="save-modal-body" class="image-intake__modal-body"></div>
       <p id="save-modal-step" class="image-intake__modal-step"></p>
       <p id="save-modal-notice" class="image-intake__modal-notice" hidden role="status"></p>
@@ -90,6 +112,6 @@
     </div>
   </div>
 
-  <script src="/image-intake-client.js?v=16"></script>
+  <script src="/image-intake-client.js?v=17"></script>
 </body>
 </html>

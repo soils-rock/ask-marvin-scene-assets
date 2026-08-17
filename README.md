@@ -32,10 +32,11 @@ Raw photo archive (external drive):
 /Volumes/Marvin/CyanoVerse_Source_Files/
 ├── Backgrounds_Raw/     ← flat files (no subdirectories)
 ├── Foregrounds_Raw/     ← flat files; matched pair = same basename in both folders
+├── Location_Raw/        ← {slug}.json coordinates; optional {slug}.jpg for GPS
 └── Processed_images/    ← ingested PNGs moved here as {stem}__bg.png / {stem}__fg.png
 ```
 
-Override paths with env vars if needed (`SCENE_PNG_ARCHIVE`, `ASK_MARVIN_ROOT`, `BACKGROUNDS_RAW_DIR`, `FOREGROUNDS_RAW_DIR`).
+Override paths with env vars if needed (`SCENE_PNG_ARCHIVE`, `ASK_MARVIN_ROOT`, `BACKGROUNDS_RAW_DIR`, `FOREGROUNDS_RAW_DIR`, `LOCATION_RAW_DIR`).
 
 ---
 
@@ -80,6 +81,7 @@ Browser tool at **http://127.0.0.1:5175/** (port override: `IMAGE_INTAKE_PORT`).
 - **Copy** (never overwrite) into flat archive folders:
   - Backgrounds → `Backgrounds_Raw/{location-slug}-{n}.jpg`
   - Foregrounds → `Foregrounds_Raw/{location-slug}-{cycleLetter}-{n}.jpg` (requires at least two foreground picks per save)
+- Intake reads GPS from the source images or from `Location_Raw/{slug}.jpg`, asks for coordinates when it finds none, and records them in `Location_Raw/{slug}.json` for ingest.
 
 No subdirectories. Existing targets with the same name are skipped (collision-safe).
 

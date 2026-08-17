@@ -26,6 +26,9 @@
   const saveModalSkip = $("save-modal-skip");
   const saveModalLocationWrap = $("save-modal-location-wrap");
   const saveModalLocation = $("save-modal-location");
+  const saveModalCoordsWrap = $("save-modal-coords-wrap");
+  const saveModalLat = $("save-modal-lat");
+  const saveModalLong = $("save-modal-long");
 
   /** @type {{ bins: object[], sourcePath: string } | null} */
   let scanData = null;
@@ -53,6 +56,20 @@
   let saveStats = { copied: 0, skipped: 0, collision: 0, error: 0 };
   /** @type {object | null} */
   let currentStepPreview = null;
+  let awaitingCoordinates = false;
+
+  function hideCoordFields() {
+    awaitingCoordinates = false;
+    if (saveModalCoordsWrap) saveModalCoordsWrap.hidden = true;
+    if (saveModalLat) saveModalLat.value = "";
+    if (saveModalLong) saveModalLong.value = "";
+  }
+
+  function showCoordFields() {
+    awaitingCoordinates = true;
+    saveModalCoordsWrap.hidden = false;
+    saveModalLat.focus();
+  }
 
   function showError(msg) {
     if (!msg) {
@@ -365,6 +382,7 @@
   function closeSaveModal() {
     saveModal.hidden = true;
     saveModalLocationWrap.hidden = true;
+    hideCoordFields();
     saveQueue = [];
     saveStepIndex = 0;
     currentStepPreview = null;
@@ -584,6 +602,7 @@
     saveModalConfirm.disabled = false;
     saveModalSkip.disabled = false;
     currentStepPreview = null;
+    hideCoordFields();
     showModalNotice("");
 
     const binLabel = binLabelForStep(step);
@@ -657,6 +676,53 @@
     }
   }
 
+  function saveRequest(step, locationName, extra) {
+    const isFg = saveMode === "fg" && step.type === "fg-batch";
+    const payload = isFg
+      ? {
+          binIndex: step.binIndex,
+          locationName,
+          files: step.files,
+          cycleLetter: step.cycleLetter,
+          confirm: true,
+          ...extra,
+        }
+      : {
+          binIndex: step.binIndex,
+          locationName,
+          files: [step.file],
+          suffixIndex: step.suffixIndex,
+          confirm: true,
+          ...extra,
+        };
+    return fetch(isFg ? "/api/save-foregrounds" : "/api/save-backgrounds", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  function finishConfirmedSave(step, isFg, data) {
+    tallySavePlans(data.plans);
+    if (isFg) {
+      fgWalkthroughProcessed.push(...step.files);
+      fgCycleCounter += 1;
+    }
+    hideCoordFields();
+    const copied = data.plans.filter((p) => p.status === "copied");
+    if (copied.length) {
+      showModalNotice(
+        copied.length === 1
+          ? `Copied → ${copied[0].to}`
+          : `Copied ${copied.length} file(s)`
+      );
+    } else {
+      const first = data.plans[0];
+      showModalNotice(first?.error || `Skipped: ${first?.to}`, true);
+    }
+    setTimeout(advanceSaveStep, copied.length ? 500 : 700);
+  }
+
   async function onSaveConfirm() {
     const step = saveQueue[saveStepIndex];
     if (!step) return;
@@ -694,33 +760,20 @@
     saveModalConfirm.disabled = true;
     saveModalSkip.disabled = true;
 
+    const extra = awaitingCoordinates
+      ? { lat: saveModalLat.value, long: saveModalLong.value }
+      : {};
+
     try {
       const isFg = saveMode === "fg" && step.type === "fg-batch";
-      const res = await fetch(
-        isFg ? "/api/save-foregrounds" : "/api/save-backgrounds",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            isFg
-              ? {
-                  binIndex: step.binIndex,
-                  locationName,
-                  files: step.files,
-                  cycleLetter: step.cycleLetter,
-                  confirm: true,
-                }
-              : {
-                  binIndex: step.binIndex,
-                  locationName,
-                  files: [step.file],
-                  suffixIndex: step.suffixIndex,
-                  confirm: true,
-                }
-          ),
-        }
-      );
+      const res = await saveRequest(step, locationName, extra);
       const data = await res.json();
+      if (data.needsCoordinates) {
+        showCoordFields();
+        saveModalConfirm.disabled = false;
+        saveModalSkip.disabled = false;
+        return;
+      }
       if (!res.ok || !data.ok) {
         showModalNotice(data.error || `Save failed (${res.status})`, true);
         saveModalConfirm.disabled = false;
@@ -728,24 +781,7 @@
         return;
       }
 
-      tallySavePlans(data.plans);
-      if (isFg) {
-        fgWalkthroughProcessed.push(...step.files);
-        fgCycleCounter += 1;
-      }
-      const copied = data.plans.filter((p) => p.status === "copied");
-      if (copied.length) {
-        showModalNotice(
-          copied.length === 1
-            ? `Copied → ${copied[0].to}`
-            : `Copied ${copied.length} file(s)`
-        );
-      } else {
-        const first = data.plans[0];
-        showModalNotice(first?.error || `Skipped: ${first?.to}`, true);
-      }
-
-      setTimeout(advanceSaveStep, copied.length ? 500 : 700);
+      finishConfirmedSave(step, isFg, data);
     } catch (err) {
       showModalNotice(err.message || String(err), true);
       saveModalConfirm.disabled = false;
@@ -753,7 +789,38 @@
     }
   }
 
-  function onSaveSkip() {
+  async function onSaveSkip() {
+    if (awaitingCoordinates) {
+      const step = saveQueue[saveStepIndex];
+      if (!step) return;
+      const locationName = locationNameForStep(step);
+      if (!locationName) {
+        showModalNotice(`Enter a location name for Bin ${step.binIndex}.`, true);
+        return;
+      }
+      persistCurrentStepLocation();
+      saveModalConfirm.disabled = true;
+      saveModalSkip.disabled = true;
+      try {
+        const isFg = saveMode === "fg" && step.type === "fg-batch";
+        const res = await saveRequest(step, locationName, {
+          skipCoordinates: true,
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          showModalNotice(data.error || `Save failed (${res.status})`, true);
+          saveModalConfirm.disabled = false;
+          saveModalSkip.disabled = false;
+          return;
+        }
+        finishConfirmedSave(step, isFg, data);
+      } catch (err) {
+        showModalNotice(err.message || String(err), true);
+        saveModalConfirm.disabled = false;
+        saveModalSkip.disabled = false;
+      }
+      return;
+    }
     saveStats.skipped += 1;
     advanceSaveStep();
   }
@@ -942,7 +1009,7 @@
   let locationPreviewTimer = null;
   saveModalLocation.addEventListener("input", () => {
     const step = saveQueue[saveStepIndex];
-    if (!stepNeedsLocation(step)) return;
+    if (!stepNeedsLocation(step) || awaitingCoordinates) return;
     const val = saveModalLocation.value.trim();
     if (val) binLocationNames.set(step.binIndex, val);
     else binLocationNames.delete(step.binIndex);

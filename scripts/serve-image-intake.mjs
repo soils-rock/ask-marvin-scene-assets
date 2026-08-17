@@ -16,8 +16,15 @@ import {
 import {
   planBackgroundSaves,
   planForegroundSaves,
+  slugLocationName,
   validateBinFiles,
 } from "./lib/image-intake-save.mjs";
+import { validateCoordinateFields } from "./lib/parse-coordinate.mjs";
+import {
+  findCoordsForSlug,
+  readSidecar,
+  writeSidecar,
+} from "./lib/location-coords.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(__dirname, "..");
@@ -148,6 +155,48 @@ function handleImage(req, res, url) {
   sendFile(res, resolved.path);
 }
 
+function candidateSourcePaths(files) {
+  const names = Array.isArray(files) ? files : [];
+  const paths = [];
+  for (const name of names) {
+    const resolved = resolveImageUnderRoot(activeSourceRoot, name);
+    if (resolved.ok) paths.push(resolved.path);
+  }
+  return paths;
+}
+
+async function resolveSaveCoordinates(slug, files, body) {
+  if (body.skipCoordinates === true) {
+    return { ok: true };
+  }
+
+  const latRaw = body.lat;
+  const longRaw = body.long;
+  const hasManual =
+    (latRaw != null && String(latRaw).trim() !== "") ||
+    (longRaw != null && String(longRaw).trim() !== "");
+  if (hasManual) {
+    const parsed = validateCoordinateFields(latRaw, longRaw);
+    if (!parsed.ok) return parsed;
+    const coords = {
+      lat: Number(parsed.lat),
+      long: Number(parsed.long),
+    };
+    writeSidecar(slug, coords);
+    return { ok: true };
+  }
+
+  const found = await findCoordsForSlug(slug, candidateSourcePaths(files));
+  if (found) {
+    writeSidecar(slug, found);
+    return { ok: true };
+  }
+  if (readSidecar(slug)) {
+    return { ok: true };
+  }
+  return { ok: false, needsCoordinates: true };
+}
+
 function findBin(binIndex) {
   if (!activeBins) return null;
   return activeBins.find((b) => b.index === binIndex) ?? null;
@@ -195,6 +244,20 @@ async function handleSaveBackgrounds(req, res) {
     const binCheck = validateBinFiles(bin, binIndex);
     if (!binCheck.ok) {
       sendJson(res, 400, binCheck);
+      return;
+    }
+    const slugResult = slugLocationName(body.locationName);
+    if (!slugResult.ok) {
+      sendJson(res, 400, slugResult);
+      return;
+    }
+    const coords = await resolveSaveCoordinates(
+      slugResult.slug,
+      body.files,
+      body
+    );
+    if (!coords.ok) {
+      sendJson(res, coords.needsCoordinates ? 200 : 400, coords);
       return;
     }
     const result = planBackgroundSaves(
@@ -256,6 +319,20 @@ async function handleSaveForegrounds(req, res) {
     const binCheck = validateBinFiles(bin, binIndex);
     if (!binCheck.ok) {
       sendJson(res, 400, binCheck);
+      return;
+    }
+    const slugResult = slugLocationName(body.locationName);
+    if (!slugResult.ok) {
+      sendJson(res, 400, slugResult);
+      return;
+    }
+    const coords = await resolveSaveCoordinates(
+      slugResult.slug,
+      body.files,
+      body
+    );
+    if (!coords.ok) {
+      sendJson(res, coords.needsCoordinates ? 200 : 400, coords);
       return;
     }
     const result = planForegroundSaves(

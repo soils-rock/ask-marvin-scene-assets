@@ -13,6 +13,7 @@ import {
 } from "./flat-archive-pairs.mjs";
 import { convertArchivePngToWebp, loadSharp } from "./scene-png-to-webp.mjs";
 import { foregroundWebpFileName } from "./foreground-side-suffix.mjs";
+import { locationSlugFromStem, readSidecar } from "./location-coords.mjs";
 
 function askMarvinRoot() {
   return process.env.ASK_MARVIN_ROOT || ASK_MARVIN_ROOT;
@@ -118,6 +119,16 @@ function writeMetadataCsv(csvPath, header, rows) {
   fs.writeFileSync(csvPath, objectsToCsv(header, rows));
 }
 
+function applySidecarCoords(row, stem) {
+  const hasLat = String(row.lat ?? "").trim();
+  const hasLong = String(row.long ?? "").trim();
+  if (hasLat || hasLong) return;
+  const coords = readSidecar(locationSlugFromStem(stem));
+  if (!coords) return;
+  row.lat = String(coords.lat);
+  row.long = String(coords.long);
+}
+
 function upsertBackgroundRow({ rows, header, backgroundId, webpFile, stem }) {
   const id = stemToBackgroundId(stem);
   let row = rows.find((r) => r.background_id === id);
@@ -127,6 +138,7 @@ function upsertBackgroundRow({ rows, header, backgroundId, webpFile, stem }) {
     if (!row.location_key) row.location_key = `${id}_site`;
     if (!row.scene_set_id) row.scene_set_id = id;
     if (!row.place_name) row.place_name = stemToPlaceName(stem);
+    applySidecarCoords(row, stem);
     return { row, created: false };
   }
 
@@ -140,6 +152,7 @@ function upsertBackgroundRow({ rows, header, backgroundId, webpFile, stem }) {
   row.place_name = stemToPlaceName(stem);
   row.status = "ready";
   row.notes = "Ingested from flat archive.";
+  applySidecarCoords(row, stem);
   rows.push(row);
   return { row, created: true };
 }

@@ -437,6 +437,40 @@ body.image-intake {
   border-color: #2563eb;
 }
 
+.image-intake__modal-coords {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.image-intake__modal-coords[hidden] {
+  display: none;
+}
+
+.image-intake__modal-coords span {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.25rem;
+}
+
+.image-intake__modal-coords input {
+  width: 100%;
+  font: inherit;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+.image-intake__modal-coords input:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+  border-color: #2563eb;
+}
+
 .image-intake__modal-close {
   font: inherit;
   font-size: 1.5rem;
