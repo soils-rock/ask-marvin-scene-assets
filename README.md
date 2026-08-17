@@ -5,7 +5,8 @@ Authoring tools for **ask-marvin** scene art:
 Workflow
 1) image intake,
 2) flat-archive ingest (PNG → WebP),
-3) scene pair review - UI for pairing backgrounds + foregrounds + Marvin.
+3) scene pair review,
+4) location backfill.
 
 Finished scene WebPs, metadata CSVs, and the playable-pairs table live in the **ask-marvin** consumer repo, not here.
 
@@ -144,7 +145,21 @@ npm run review:scenes
 
 Scenes already in the playable-pairs table show as committed; new ingest rows show as metadata-only until Completed.
 
-### 6. Browser cache
+**Coordinates are saved by "Add to pairing table", not by typing them.** The latitude and longitude fields stage a value; `/api/complete-pair` is what writes it to `scene_background_metadata.csv` and rebuilds the registry. Leaving the review tool without completing the pair discards them, and the background row keeps empty `lat`/`long` with no warning.
+
+### 6. Derive the rest of the location — `backfill-scene-locations.mjs`
+
+```bash
+cd ~/CyanoVerse/ask-marvin
+node scripts/backfill-scene-locations.mjs           # dry run, prints the change table
+node scripts/backfill-scene-locations.mjs --write   # applies it
+```
+
+Reads the coordinates on each background row and fills `region`, `state_or_country` and `elevation_m` where they are empty, by reverse geocode and elevation lookup. It never overwrites a cell that already has a value, and it never invents one: a lookup that fails leaves the cell empty and lists the row.
+
+Everything else on the scene — `foreground_subject`, `organisms_present`, `soil_crust_type`, `what_we_see` — is still written by hand in `~/CyanoVerse/ask-marvin/data/scene_foreground_metadata.csv`. Ingest creates that row as `status=draft` with those cells empty, and nothing fills them automatically.
+
+### 7. Browser cache
 
 The review server sends `Cache-Control: no-store` for the built review page, but Chrome can still show stale UI (especially `localStorage` staging). After rebuilds, **hard-refresh** (**Cmd+Shift+R**). If a scene is missing after ingest, confirm you ran step 4 (or use `review:scenes`, which rebuilds automatically).
 
