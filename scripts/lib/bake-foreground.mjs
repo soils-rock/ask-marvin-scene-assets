@@ -1,6 +1,6 @@
 /**
- * Bake foreground position/scale into 1920×1080 WebP (review tool).
- * Anchor: bottom-left for _L, bottom-right for _R.
+ * Bake anchors the foreground to the bottom and to its own side, scales it,
+ * and crops whatever falls outside the 1920×1080 canvas.
  */
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -51,19 +51,31 @@ export function computeCompositePosition(adjust, anchor, srcW, srcH) {
   const sy = scaleY / 100;
   const scaledW = Math.max(1, Math.round(srcW * sx));
   const scaledH = Math.max(1, Math.round(srcH * sy));
+
+  const width = Math.min(scaledW, CANVAS_W);
+  const height = Math.min(scaledH, CANVAS_H);
+  const extractTop = Math.max(0, scaledH - CANVAS_H);
+  const compositeTop = Math.max(0, CANVAS_H - scaledH);
+
+  let extractLeft;
+  let compositeLeft;
   if (anchor === "left") {
-    return {
-      left: 0,
-      top: CANVAS_H - scaledH,
-      scaledW,
-      scaledH,
-    };
+    extractLeft = 0;
+    compositeLeft = 0;
+  } else {
+    extractLeft = Math.max(0, scaledW - CANVAS_W);
+    compositeLeft = Math.max(0, CANVAS_W - scaledW);
   }
+
   return {
-    left: CANVAS_W - scaledW,
-    top: CANVAS_H - scaledH,
     scaledW,
     scaledH,
+    width,
+    height,
+    extractLeft,
+    extractTop,
+    compositeLeft,
+    compositeTop,
   };
 }
 
@@ -104,15 +116,20 @@ export async function bakeForeground({
   const meta = await sharp(sourcePath).metadata();
   const srcW = meta.width ?? CANVAS_W;
   const srcH = meta.height ?? CANVAS_H;
-  const { left, top, scaledW, scaledH } = computeCompositePosition(
-    adjust,
-    anchor,
-    srcW,
-    srcH
-  );
+  const {
+    scaledW,
+    scaledH,
+    width,
+    height,
+    extractLeft,
+    extractTop,
+    compositeLeft,
+    compositeTop,
+  } = computeCompositePosition(adjust, anchor, srcW, srcH);
 
   const resized = await sharp(sourcePath)
     .resize(scaledW, scaledH, { fit: "fill" })
+    .extract({ left: extractLeft, top: extractTop, width, height })
     .toBuffer();
 
   const destPath = sourcePath;
@@ -128,7 +145,7 @@ export async function bakeForeground({
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     },
   })
-    .composite([{ input: resized, left, top }])
+    .composite([{ input: resized, left: compositeLeft, top: compositeTop }])
     .webp({ quality: 80 })
     .toFile(destPath);
 
@@ -142,7 +159,8 @@ export async function bakeForeground({
     destPath,
     adjust,
     anchor,
-    composite: { left, top, scaledW, scaledH },
+    composite: { left: compositeLeft, top: compositeTop, scaledW, scaledH },
+    cropped: { x: extractLeft > 0, y: extractTop > 0 },
     sizeWarning,
     noop: false,
   };
