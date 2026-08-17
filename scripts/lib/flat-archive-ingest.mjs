@@ -129,6 +129,20 @@ function applySidecarCoords(row, stem) {
   row.long = String(coords.long);
 }
 
+/** Existing id that matches proposed only by letter case, or null. */
+function findIdDifferingOnlyByCase(ids, proposed) {
+  const want = String(proposed);
+  const lower = want.toLowerCase();
+  for (const id of ids) {
+    const existing = String(id ?? "");
+    if (!existing) continue;
+    if (existing !== want && existing.toLowerCase() === lower) {
+      return existing;
+    }
+  }
+  return null;
+}
+
 function upsertBackgroundRow({ rows, header, backgroundId, webpFile, stem }) {
   const id = stemToBackgroundId(stem);
   let row = rows.find((r) => r.background_id === id);
@@ -237,10 +251,12 @@ export async function ingestMatchedPairs(matched) {
 
   const sharp = await loadSharp();
   const log = [];
+  const refused = [];
   const results = {
     succeeded: 0,
     skipped: 0,
     failed: 0,
+    refused: 0,
     log,
   };
 
@@ -252,6 +268,33 @@ export async function ingestMatchedPairs(matched) {
     const destWebpFg = path.join(fgDir, fgWebpFile);
     const { bg: destProcessedBg, fg: destProcessedFg } = processedDestinations(stem);
     const backgroundId = stemToBackgroundId(stem);
+
+    const bgCaseHit = findIdDifferingOnlyByCase(
+      bgRows.map((r) => r.background_id),
+      backgroundId
+    );
+    const namedBackground = bgRows.find(
+      (r) => String(r.background_id ?? "").toLowerCase() === backgroundId.toLowerCase()
+    );
+    const fgWouldName = backgroundId;
+    const fgNamesDifferentCase =
+      namedBackground && namedBackground.background_id !== fgWouldName
+        ? namedBackground.background_id
+        : null;
+    const fgTableCaseHit = findIdDifferingOnlyByCase(
+      fgRows.map((r) => r.background_id),
+      backgroundId
+    );
+    const caseHit = bgCaseHit || fgNamesDifferentCase || fgTableCaseHit;
+    if (caseHit) {
+      refused.push({
+        basename,
+        derivedId: backgroundId,
+        existingId: caseHit,
+      });
+      results.refused += 1;
+      continue;
+    }
 
     if (fs.existsSync(destProcessedBg) || fs.existsSync(destProcessedFg)) {
       log.push(
@@ -337,6 +380,20 @@ export async function ingestMatchedPairs(matched) {
       log.push(`FAIL ${basename}: move — ${err.message || String(err)}`);
       results.failed += 1;
     }
+  }
+
+  if (refused.length) {
+    const heading =
+      "REFUSED — the identifier in the raw filenames and the identifier in the table must match exactly, including capitalisation. Change one of the two before the pair can be ingested.";
+    console.log(`\n${heading}`);
+    log.push("");
+    log.push(heading);
+    for (const item of refused) {
+      const line = `  ${item.basename}: filename id "${item.derivedId}" vs table id "${item.existingId}"`;
+      console.log(line);
+      log.push(line);
+    }
+    process.exitCode = 1;
   }
 
   return results;
