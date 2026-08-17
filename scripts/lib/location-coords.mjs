@@ -45,6 +45,8 @@ export async function readGps(filePath) {
   }
 }
 
+const LOCATION_RAW_EXTS = [".jpg", ".jpeg", ".heic", ".heif", ".png", ".dng"];
+
 function findLocationRawImage(slug) {
   if (!slug || !fs.existsSync(locationRawDir())) return null;
   let names;
@@ -53,10 +55,12 @@ function findLocationRawImage(slug) {
   } catch {
     return null;
   }
-  const wanted = new Set([`${slug}.jpg`.toLowerCase(), `${slug}.jpeg`.toLowerCase()]);
-  const match = names.find((name) => wanted.has(name.toLowerCase()));
-  if (!match) return null;
-  return path.join(locationRawDir(), match);
+  const byLower = new Map(names.map((name) => [name.toLowerCase(), name]));
+  for (const ext of LOCATION_RAW_EXTS) {
+    const match = byLower.get(`${slug}${ext}`.toLowerCase());
+    if (match) return path.join(locationRawDir(), match);
+  }
+  return null;
 }
 
 export async function findCoordsForSlug(slug, candidateFiles) {
