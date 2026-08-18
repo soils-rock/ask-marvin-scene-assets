@@ -128,6 +128,7 @@ New ingested scenes appear as **metadata-only** candidates (`pairSource: metadat
 ### 5. Review / pair — `npm run review:scenes`
 
 ```bash
+cd ~/CyanoVerse/ask-marvin-scene-assets
 npm run review:scenes
 ```
 

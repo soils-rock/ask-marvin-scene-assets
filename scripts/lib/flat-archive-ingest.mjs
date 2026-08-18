@@ -383,13 +383,12 @@ export async function ingestMatchedPairs(matched) {
   }
 
   if (refused.length) {
-    const heading =
-      "REFUSED — the identifier in the raw filenames and the identifier in the table must match exactly, including capitalisation. Change one of the two before the pair can be ingested.";
+    const heading = "REFUSED";
     console.log(`\n${heading}`);
     log.push("");
     log.push(heading);
     for (const item of refused) {
-      const line = `  ${item.basename}: filename id "${item.derivedId}" vs table id "${item.existingId}"`;
+      const line = `  ${item.derivedId}`;
       console.log(line);
       log.push(line);
     }
